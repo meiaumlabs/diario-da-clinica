@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Diário da Clínica
  * Description: Recebe e interpreta o relatório diário de fechamento da recepção, armazena de forma estruturada e gera relatórios consolidados com gráficos e exportação.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Meia Um Labs
  * License:     GPL-2.0+
  * Text Domain: diario-da-clinica
@@ -12,10 +12,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DC_VERSION',    '1.0.0' );
+define( 'DC_VERSION',    '1.1.0' );
 define( 'DC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DC_TABLE',      'clinica_relatorios' );
+define( 'DC_GITHUB_URL', 'https://github.com/meiaumlabs/diario-da-clinica/' );
+
+/*
+ * ------------------------------------------------------------------
+ * Atualização automática via GitHub (Plugin Update Checker v5).
+ * Publique uma Release com tag "vX.Y.Z" e anexe o ZIP do plugin.
+ * O WordPress detectará e oferecerá a atualização automaticamente.
+ * ------------------------------------------------------------------
+ */
+require_once DC_PLUGIN_DIR . 'includes/plugin-update-checker/plugin-update-checker.php';
+
+$dc_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    DC_GITHUB_URL,
+    __FILE__,
+    'diario-da-clinica'
+);
+$dc_update_checker->getVcsApi()->enableReleaseAssets();
 
 require_once DC_PLUGIN_DIR . 'includes/class-activator.php';
 require_once DC_PLUGIN_DIR . 'includes/class-parser.php';
