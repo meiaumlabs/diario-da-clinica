@@ -1,0 +1,241 @@
+/* Diário da Clínica — Admin Styles */
+
+.dc-wrap h1 {
+    margin-bottom: 16px;
+}
+
+/* Cards */
+.dc-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.dc-card h2 {
+    font-size: 1.1em;
+    margin-top: 0;
+}
+
+.dc-card h3 {
+    font-size: 1em;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Textarea for paste */
+#dc-texto {
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+/* Actions row */
+.dc-actions {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dc-spinner {
+    float: none !important;
+    vertical-align: middle;
+    margin: 0 !important;
+}
+
+/* Tables */
+.dc-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.dc-table th,
+.dc-table td {
+    text-align: center;
+    padding: 6px 10px;
+}
+
+.dc-table th:first-child,
+.dc-table td:first-child {
+    text-align: left;
+}
+
+.dc-preview-table th:first-child {
+    width: 50%;
+    text-align: left;
+}
+
+.dc-totais th {
+    background: #f0f4ff;
+    font-weight: 700;
+}
+
+.dc-table-wrap {
+    overflow-x: auto;
+}
+
+/* Pagination */
+.dc-paginacao {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.dc-total {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+/* Notices / avisos */
+.dc-avisos {
+    list-style: disc;
+    padding-left: 20px;
+    color: #856404;
+}
+
+#dc-msg-area .dc-success {
+    color: #155724;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+#dc-msg-area .dc-error {
+    color: #721c24;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+/* Metrics grid */
+.dc-metrics-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.dc-metric {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    min-width: 120px;
+    text-align: center;
+    flex: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+
+.dc-metric-conv {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.dc-metric-val {
+    display: block;
+    font-size: 2em;
+    font-weight: 700;
+    color: #1d4ed8;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.dc-metric-lbl {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+/* Charts grid */
+.dc-charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+    .dc-charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dc-chart-card canvas {
+    max-height: 260px;
+}
+
+/* Relatorio form */
+.dc-form-relatorio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.dc-form-relatorio label {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    gap: 4px;
+}
+
+.dc-form-relatorio input[type="date"],
+.dc-form-relatorio select {
+    padding: 4px 8px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* Export buttons */
+.dc-export-btns {
+    display: flex;
+    gap: 6px;
+}
+
+/* Actions column */
+.dc-acoes a {
+    text-decoration: none;
+}
+
+.dc-link-excluir {
+    color: #cc1818 !important;
+}
+
+/* Original text block */
+.dc-texto-original {
+    background: #f6f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Vazio state */
+.dc-vazio {
+    color: #777;
+    font-style: italic;
+}
