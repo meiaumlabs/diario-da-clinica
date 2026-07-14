@@ -152,6 +152,11 @@
         if ( typeof window.DC_CHART_DATA === 'undefined' ) return;
         if ( typeof Chart === 'undefined' ) return;
 
+        // C-003: register datalabels plugin so it only affects charts that opt in.
+        if ( typeof ChartDataLabels !== 'undefined' ) {
+            Chart.register(ChartDataLabels);
+        }
+
         var data = window.DC_CHART_DATA;
 
         // Line chart — evolução.
@@ -190,7 +195,11 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'top' } },
+                    plugins: {
+                        legend: { position: 'top' },
+                        // C-003: disable datalabels on the line chart.
+                        datalabels: { display: false },
+                    },
                     scales: {
                         y: { beginAtZero: true, ticks: { stepSize: 1 } },
                     },
@@ -225,6 +234,22 @@
                                     var pct   = total > 0 ? Math.round(ctx.parsed / total * 1000) / 10 : 0;
                                     return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
                                 },
+                            },
+                        },
+                        // C-003: permanent labels on each doughnut slice.
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 11 },
+                            textAlign: 'center',
+                            formatter: function(value, ctx) {
+                                if (!value) return null;
+                                var total = ctx.dataset.data.reduce(function(a,b){return a+b;}, 0);
+                                var pct = total > 0 ? Math.round(value / total * 1000) / 10 : 0;
+                                return value + '\n' + pct + '%';
+                            },
+                            display: function(ctx) {
+                                // Hide label for zero-value slices.
+                                return ctx.dataset.data[ctx.dataIndex] > 0;
                             },
                         },
                     },

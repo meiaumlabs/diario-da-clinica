@@ -60,10 +60,19 @@ class DC_Admin {
             true
         );
 
+        // C-003: datalabels plugin for permanent labels on doughnut chart.
+        wp_enqueue_script(
+            'chartjs-datalabels',
+            'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
+            [ 'chartjs' ],
+            '2.2.0',
+            true
+        );
+
         wp_enqueue_script(
             'dc-admin',
             DC_PLUGIN_URL . 'admin/js/admin.js',
-            [ 'jquery', 'chartjs' ],
+            [ 'jquery', 'chartjs', 'chartjs-datalabels' ],
             DC_VERSION,
             true
         );
