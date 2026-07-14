@@ -68,6 +68,70 @@ $origens_data   = [
     $totais['outros'],
 ];
 
+// C-002 — Funnel by origin.
+// Note: leads and agendamentos have different granularity (7 vs 4 origins),
+// so we group them into 5 buckets for apples-to-apples comparison.
+$funil = [
+    [
+        'grupo'     => 'Tráfego pago',
+        'leads'     => $totais['trafego_pago'],
+        'agend'     => $totais['agend_trafego'],
+        'consultas' => $totais['consultas_trafego'],
+    ],
+    [
+        'grupo'     => 'Indicação',
+        'leads'     => $totais['ind_paciente'] + $totais['ind_medico'],
+        'agend'     => $totais['agend_indicacao'],
+        'consultas' => $totais['consultas_indicacao'],
+    ],
+    [
+        'grupo'     => 'Orgânico (Site + Instagram)',
+        'leads'     => $totais['site'] + $totais['instagram_organico'],
+        'agend'     => $totais['agend_site'],
+        'consultas' => $totais['consultas_organico'],
+    ],
+    [
+        'grupo'     => 'Pacientes antigos',
+        'leads'     => $totais['paciente_antigo'],
+        'agend'     => $totais['agend_antigos'],
+        'consultas' => $totais['consultas_antigos'],
+    ],
+    [
+        'grupo'     => 'Outros',
+        'leads'     => $totais['outros'],
+        'agend'     => null,
+        'consultas' => null,
+    ],
+];
+
+// Helper: safe percentage string.
+$dc_taxa = static function ( int $num, ?int $den ): string {
+    return ( $den !== null && $den > 0 )
+        ? round( $num / $den * 100, 1 ) . '%'
+        : '—';
+};
+
+// Find champion origin by conversion rate (Leads→Consultas) and by volume.
+$campeao_conv  = null;
+$campeao_vol   = null;
+$max_taxa_val  = -1.0;
+$max_vol       = -1;
+
+foreach ( $funil as $g ) {
+    if ( $g['consultas'] === null ) continue;
+    if ( $g['leads'] > 0 ) {
+        $taxa_val = $g['consultas'] / $g['leads'] * 100;
+        if ( $taxa_val > $max_taxa_val ) {
+            $max_taxa_val = $taxa_val;
+            $campeao_conv = $g;
+        }
+    }
+    if ( (int) $g['consultas'] > $max_vol ) {
+        $max_vol      = (int) $g['consultas'];
+        $campeao_vol  = $g;
+    }
+}
+
 // Export nonce.
 $export_nonce = wp_create_nonce( 'dc_export' );
 $export_base  = admin_url( 'admin-post.php' );
@@ -141,6 +205,59 @@ $url_pdf      = $export_base . '?action=dc_export_pdf&' . $export_args;
         <div class="dc-card dc-chart-card">
             <h3>Distribuição de origens</h3>
             <canvas id="dc-chart-origens" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Conversão por origem (C-002) -->
+    <div class="dc-card">
+        <h3>Conversão por origem</h3>
+
+        <?php if ( $campeao_conv ) : ?>
+        <p class="dc-funil-destaque">
+            ⭐ <strong>Origem com mais conversões:</strong>
+            <?php echo esc_html( $campeao_conv['grupo'] ); ?>
+            (<?php echo esc_html( round( $campeao_conv['consultas'] / $campeao_conv['leads'] * 100, 1 ) ); ?>%
+            — <?php echo esc_html( $campeao_conv['consultas'] ); ?> consultas
+            de <?php echo esc_html( $campeao_conv['leads'] ); ?> leads)
+            <?php if ( $campeao_vol && $campeao_vol['grupo'] !== $campeao_conv['grupo'] && $campeao_vol['consultas'] > 0 ) : ?>
+            &nbsp;|&nbsp; 🏆 <strong>Maior volume absoluto:</strong>
+            <?php echo esc_html( $campeao_vol['grupo'] ); ?>
+            (<?php echo esc_html( $campeao_vol['consultas'] ); ?> consultas)
+            <?php endif; ?>
+        </p>
+        <?php endif; ?>
+
+        <div class="dc-table-wrap">
+        <table class="dc-table widefat striped dc-funil-table">
+            <thead>
+                <tr>
+                    <th>Origem</th>
+                    <th>Leads</th>
+                    <th>Agendamentos</th>
+                    <th>Consultas</th>
+                    <th>Taxa Leads→Agend.</th>
+                    <th>Taxa Agend.→Consul.</th>
+                    <th>Taxa Leads→Consul.</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ( $funil as $g ) :
+                $g_leads    = (int) $g['leads'];
+                $g_agend    = $g['agend'] !== null ? (int) $g['agend'] : null;
+                $g_consultas = $g['consultas'] !== null ? (int) $g['consultas'] : null;
+            ?>
+                <tr>
+                    <td><strong><?php echo esc_html( $g['grupo'] ); ?></strong></td>
+                    <td><?php echo esc_html( $g_leads ); ?></td>
+                    <td><?php echo $g_agend !== null ? esc_html( $g_agend ) : '<span class="dc-nd">—</span>'; ?></td>
+                    <td><?php echo $g_consultas !== null ? esc_html( $g_consultas ) : '<span class="dc-nd">—</span>'; ?></td>
+                    <td><?php echo esc_html( $dc_taxa( $g_agend ?? 0, $g_leads > 0 ? $g_leads : null ) ); ?></td>
+                    <td><?php echo esc_html( $dc_taxa( $g_consultas ?? 0, $g_agend ) ); ?></td>
+                    <td><?php echo esc_html( $dc_taxa( $g_consultas ?? 0, $g_leads > 0 ? $g_leads : null ) ); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
         </div>
     </div>
 

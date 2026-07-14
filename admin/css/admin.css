@@ -239,3 +239,22 @@
     color: #777;
     font-style: italic;
 }
+
+/* Funil de conversão por origem (C-002) */
+.dc-funil-destaque {
+    background: #eff6ff;
+    border-left: 4px solid #1d4ed8;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+}
+
+.dc-funil-table .dc-nd {
+    color: #aaa;
+}
+
+/* C-003 — datalabels: ensure doughnut canvas has room for labels */
+#dc-chart-origens {
+    max-height: 280px;
+}
