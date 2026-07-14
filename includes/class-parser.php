@@ -127,7 +127,7 @@ class DC_Parser {
         foreach ( self::$campos as $campo ) {
             if ( ! isset( $resultado['campos'][ $campo ] ) ) {
                 $resultado['campos'][ $campo ] = 0;
-                $resultado['avisos'][] = "Campo "{$campo}" não encontrado — assumido 0.";
+                $resultado['avisos'][] = 'Campo "' . $campo . '" não encontrado — assumido 0.';
             }
         }
 
