@@ -41,6 +41,16 @@ class DC_Activator {
 
         update_option( 'dc_version', DC_VERSION );
 
+        // Senha do painel público — armazenada APENAS como hash bcrypt.
+        // O texto claro nunca aparece aqui nem em nenhum outro arquivo.
+        if ( ! get_option( 'dc_painel_senha_hash' ) ) {
+            update_option(
+                'dc_painel_senha_hash',
+                '$2b$12$cnjfJ8giWD/8hrQJiLaETeyeO4py5DDEuaXpTWI7ycsddOyb2.8rO',
+                false
+            );
+        }
+
         // Custom role for reception staff.
         if ( ! get_role( 'dc_recepcao' ) ) {
             add_role(

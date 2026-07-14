@@ -1,0 +1,515 @@
+<?php
+/**
+ * Shortcode [diario_clinica_painel] — painel público com gate de senha.
+ * A senha é armazenada APENAS como hash em wp_options; nenhum texto claro
+ * aparece neste arquivo ou em qualquer outro arquivo do plugin.
+ */
+defined( 'ABSPATH' ) || exit;
+
+class DC_Shortcode_Painel {
+
+    const OPTION_HASH   = 'dc_painel_senha_hash';
+    const TRANSIENT_TTL = 3600; // 1 hora
+    const COOKIE_NAME   = 'dc_painel_token';
+    const COOKIE_TTL    = 3600; // 1 hora
+
+    public static function init(): void {
+        add_shortcode( 'diario_clinica_painel', [ __CLASS__, 'render' ] );
+        add_action( 'init', [ __CLASS__, 'handle_auth_post' ] );
+        add_action( 'wp',   [ __CLASS__, 'maybe_enqueue' ] );
+        add_action( 'wp_ajax_nopriv_dc_painel_salvar', [ __CLASS__, 'ajax_salvar' ] );
+        add_action( 'wp_ajax_dc_painel_salvar',        [ __CLASS__, 'ajax_salvar' ] );
+    }
+
+    /**
+     * Enfileira assets somente em páginas que contêm o shortcode.
+     * Chamado no hook 'wp' (após query, antes de wp_head).
+     */
+    public static function maybe_enqueue(): void {
+        global $post;
+        if (
+            is_a( $post, 'WP_Post' ) &&
+            has_shortcode( $post->post_content, 'diario_clinica_painel' )
+        ) {
+            add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
+        }
+    }
+
+    public static function enqueue_assets(): void {
+        wp_enqueue_style(
+            'dc-painel',
+            DC_PLUGIN_URL . 'public/css/painel.css',
+            [],
+            DC_VERSION
+        );
+
+        wp_enqueue_script(
+            'chartjs',
+            'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+            [],
+            '4.4.0',
+            true
+        );
+
+        wp_enqueue_script(
+            'chartjs-datalabels',
+            'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
+            [ 'chartjs' ],
+            '2.2.0',
+            true
+        );
+
+        wp_enqueue_script(
+            'dc-painel',
+            DC_PLUGIN_URL . 'public/js/painel.js',
+            [ 'jquery', 'chartjs', 'chartjs-datalabels' ],
+            DC_VERSION,
+            true
+        );
+
+        wp_localize_script( 'dc-painel', 'DC_PAINEL', [
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'dc_painel_nonce' ),
+        ] );
+    }
+
+    /** True se o cookie de sessão for válido. */
+    private static function is_authenticated(): bool {
+        $token = sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ?? '' ) );
+        if ( $token === '' ) {
+            return false;
+        }
+        return false !== get_transient( 'dc_painel_tok_' . $token );
+    }
+
+    /**
+     * Intercepta o POST do gate de senha antes de os headers serem enviados.
+     * Hook: 'init'.
+     */
+    public static function handle_auth_post(): void {
+        if (
+            'POST' !== $_SERVER['REQUEST_METHOD'] ||
+            ! isset( $_POST['dc_auth_nonce'], $_POST['dc_painel_senha'] )
+        ) {
+            return;
+        }
+
+        if ( ! wp_verify_nonce(
+            sanitize_text_field( wp_unslash( $_POST['dc_auth_nonce'] ) ),
+            'dc_painel_auth'
+        ) ) {
+            return;
+        }
+
+        $senha = wp_unslash( $_POST['dc_painel_senha'] );
+        $hash  = (string) get_option( self::OPTION_HASH, '' );
+
+        if ( $hash !== '' && password_verify( $senha, $hash ) ) {
+            $token = bin2hex( random_bytes( 32 ) );
+            set_transient( 'dc_painel_tok_' . $token, 1, self::TRANSIENT_TTL );
+            setcookie(
+                self::COOKIE_NAME,
+                $token,
+                [
+                    'expires'  => time() + self::COOKIE_TTL,
+                    'path'     => '/',
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                    'secure'   => is_ssl(),
+                ]
+            );
+            wp_safe_redirect( remove_query_arg( 'dc_auth_erro' ) );
+            exit;
+        }
+
+        wp_safe_redirect( add_query_arg( 'dc_auth_erro', '1' ) );
+        exit;
+    }
+
+    /** Callback do shortcode. */
+    public static function render( array $atts ): string {
+        if ( ! self::is_authenticated() ) {
+            return self::render_gate();
+        }
+        return self::render_panel();
+    }
+
+    // ----------------------------------------------------------------
+    // Gate de senha
+    // ----------------------------------------------------------------
+
+    private static function render_gate(): string {
+        $erro  = ! empty( $_GET['dc_auth_erro'] );
+        $nonce = wp_create_nonce( 'dc_painel_auth' );
+        ob_start();
+        ?>
+        <div class="dc-painel-gate">
+            <div class="dc-painel-gate-card">
+                <h2 class="dc-painel-gate-titulo">Painel da Clínica</h2>
+                <p>Informe a senha para acessar os dados.</p>
+                <?php if ( $erro ) : ?>
+                    <p class="dc-painel-erro" role="alert">Senha incorreta. Tente novamente.</p>
+                <?php endif; ?>
+                <form method="POST" class="dc-gate-form">
+                    <input type="hidden" name="dc_auth_nonce" value="<?php echo esc_attr( $nonce ); ?>">
+                    <div class="dc-gate-field">
+                        <label for="dc-painel-senha-input">Senha</label>
+                        <input
+                            type="password"
+                            name="dc_painel_senha"
+                            id="dc-painel-senha-input"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="dc-btn-primary">Entrar</button>
+                </form>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // ----------------------------------------------------------------
+    // Painel completo
+    // ----------------------------------------------------------------
+
+    private static function render_panel(): string {
+        // Filtro de período.
+        $de_default  = gmdate( 'Y-m-d', strtotime( '-29 days' ) );
+        $ate_default = gmdate( 'Y-m-d' );
+        $de  = sanitize_text_field( wp_unslash( $_GET['dc_de']  ?? $de_default ) );
+        $ate = sanitize_text_field( wp_unslash( $_GET['dc_ate'] ?? $ate_default ) );
+
+        if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $de ) )  $de  = $de_default;
+        if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $ate ) ) $ate = $ate_default;
+
+        $rows = DC_DB::relatorio_periodo( $de, $ate );
+
+        // Totais.
+        $totais = [];
+        foreach ( DC_Parser::$campos as $c ) {
+            $totais[ $c ] = array_sum( array_map( static fn( $r ) => (int) ( $r->$c ?? 0 ), $rows ) );
+        }
+
+        $total_agend = $totais['agend_trafego'] + $totais['agend_site']
+                     + $totais['agend_indicacao'] + $totais['agend_antigos'];
+        $conv_la = $totais['total_leads'] > 0
+            ? round( $total_agend / $totais['total_leads'] * 100, 1 ) : null;
+        $conv_ac = $total_agend > 0
+            ? round( $totais['consultas_total'] / $total_agend * 100, 1 ) : null;
+
+        // Funil por origem.
+        $funil = [
+            [ 'grupo' => 'Tráfego pago',             'leads' => $totais['trafego_pago'],                           'agend' => $totais['agend_trafego'],   'consultas' => $totais['consultas_trafego'] ],
+            [ 'grupo' => 'Indicação',                 'leads' => $totais['ind_paciente'] + $totais['ind_medico'],  'agend' => $totais['agend_indicacao'], 'consultas' => $totais['consultas_indicacao'] ],
+            [ 'grupo' => 'Orgânico (Site + Instagram)', 'leads' => $totais['site'] + $totais['instagram_organico'], 'agend' => $totais['agend_site'],      'consultas' => $totais['consultas_organico'] ],
+            [ 'grupo' => 'Pacientes antigos',         'leads' => $totais['paciente_antigo'],                       'agend' => $totais['agend_antigos'],   'consultas' => $totais['consultas_antigos'] ],
+            [ 'grupo' => 'Outros',                    'leads' => $totais['outros'],                                'agend' => null,                       'consultas' => null ],
+        ];
+
+        // Origem campeã (maior taxa Leads→Consultas).
+        $campeao_conv = null;
+        $max_taxa_val = -1.0;
+        foreach ( $funil as $g ) {
+            if ( $g['consultas'] === null || $g['leads'] <= 0 ) continue;
+            $taxa_val = $g['consultas'] / $g['leads'] * 100;
+            if ( $taxa_val > $max_taxa_val ) {
+                $max_taxa_val = $taxa_val;
+                $campeao_conv = $g;
+            }
+        }
+
+        // Dados para Chart.js.
+        $chart_labels    = [];
+        $chart_leads     = [];
+        $chart_agend     = [];
+        $chart_consultas = [];
+        foreach ( $rows as $r ) {
+            $chart_labels[]    = date( 'd/m', strtotime( $r->data_fechamento ) );
+            $r_agend           = (int) $r->agend_trafego + (int) $r->agend_site
+                               + (int) $r->agend_indicacao + (int) $r->agend_antigos;
+            $chart_leads[]     = (int) $r->total_leads;
+            $chart_agend[]     = $r_agend;
+            $chart_consultas[] = (int) $r->consultas_total;
+        }
+
+        $origens_labels = [ 'Indicação Pac.', 'Indicação Méd.', 'Tráfego Pago', 'Site', 'Instagram Org.', 'Pac. Antigo', 'Outros' ];
+        $origens_data   = [
+            $totais['ind_paciente'], $totais['ind_medico'], $totais['trafego_pago'],
+            $totais['site'], $totais['instagram_organico'], $totais['paciente_antigo'], $totais['outros'],
+        ];
+
+        $taxa = static function ( int $num, ?int $den ): string {
+            return ( $den !== null && $den > 0 ) ? round( $num / $den * 100, 1 ) . '%' : '—';
+        };
+
+        $page_url = esc_url( get_permalink() ?: home_url() );
+
+        ob_start();
+        ?>
+        <div class="dc-painel-wrap">
+
+            <!-- Filtro de período -->
+            <div class="dc-painel-card">
+                <form method="GET" action="<?php echo $page_url; ?>" class="dc-painel-form-filtro">
+                    <label><strong>De:</strong>
+                        <input type="date" name="dc_de" value="<?php echo esc_attr( $de ); ?>" required>
+                    </label>
+                    <label><strong>Até:</strong>
+                        <input type="date" name="dc_ate" value="<?php echo esc_attr( $ate ); ?>" required>
+                    </label>
+                    <button type="submit" class="dc-btn-primary">Consultar</button>
+                </form>
+            </div>
+
+            <?php if ( $campeao_conv ) : ?>
+            <!-- Hero: origem com mais conversões -->
+            <div class="dc-painel-hero">
+                <span class="dc-painel-hero-label">Origem com mais conversões</span>
+                <span class="dc-painel-hero-value"><?php echo esc_html( $campeao_conv['grupo'] ); ?></span>
+                <span class="dc-painel-hero-detail">
+                    <?php echo esc_html( round( $campeao_conv['consultas'] / $campeao_conv['leads'] * 100, 1 ) ); ?>%
+                    &mdash;
+                    <?php echo esc_html( $campeao_conv['consultas'] ); ?> consultas
+                    de <?php echo esc_html( $campeao_conv['leads'] ); ?> leads
+                </span>
+            </div>
+            <?php endif; ?>
+
+            <?php if ( empty( $rows ) ) : ?>
+                <p class="dc-painel-vazio">Nenhum dado encontrado para o período selecionado.</p>
+            <?php else : ?>
+
+            <!-- Métricas resumidas -->
+            <div class="dc-painel-metrics-grid">
+                <div class="dc-painel-metric">
+                    <span class="dc-painel-metric-val"><?php echo esc_html( $totais['total_leads'] ); ?></span>
+                    <span class="dc-painel-metric-lbl">Total de Leads</span>
+                </div>
+                <div class="dc-painel-metric">
+                    <span class="dc-painel-metric-val"><?php echo esc_html( $total_agend ); ?></span>
+                    <span class="dc-painel-metric-lbl">Agendamentos</span>
+                </div>
+                <div class="dc-painel-metric">
+                    <span class="dc-painel-metric-val"><?php echo esc_html( $totais['consultas_total'] ); ?></span>
+                    <span class="dc-painel-metric-lbl">Consultas</span>
+                </div>
+                <div class="dc-painel-metric dc-painel-metric-conv">
+                    <span class="dc-painel-metric-val"><?php echo $conv_la !== null ? esc_html( $conv_la ) . '%' : '—'; ?></span>
+                    <span class="dc-painel-metric-lbl">Conv. Leads→Agend.</span>
+                </div>
+                <div class="dc-painel-metric dc-painel-metric-conv">
+                    <span class="dc-painel-metric-val"><?php echo $conv_ac !== null ? esc_html( $conv_ac ) . '%' : '—'; ?></span>
+                    <span class="dc-painel-metric-lbl">Conv. Agend.→Consul.</span>
+                </div>
+            </div>
+
+            <!-- Gráficos (idênticos ao admin) -->
+            <div class="dc-painel-charts-grid">
+                <div class="dc-painel-card dc-painel-chart-card">
+                    <h3>Evolução diária</h3>
+                    <canvas id="dc-pub-chart-evolucao" height="120"></canvas>
+                </div>
+                <div class="dc-painel-card dc-painel-chart-card">
+                    <h3>Distribuição de origens</h3>
+                    <canvas id="dc-pub-chart-origens" height="120"></canvas>
+                </div>
+            </div>
+
+            <!-- Funil de conversão por origem -->
+            <div class="dc-painel-card">
+                <h3>Conversão por origem</h3>
+                <div class="dc-painel-table-wrap">
+                    <table class="dc-painel-table">
+                        <thead>
+                            <tr>
+                                <th>Origem</th>
+                                <th>Leads</th>
+                                <th>Agend.</th>
+                                <th>Consultas</th>
+                                <th>Taxa L→A</th>
+                                <th>Taxa A→C</th>
+                                <th>Taxa L→C</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ( $funil as $g ) :
+                            $g_leads     = (int) $g['leads'];
+                            $g_agend     = $g['agend'] !== null ? (int) $g['agend'] : null;
+                            $g_consultas = $g['consultas'] !== null ? (int) $g['consultas'] : null;
+                        ?>
+                            <tr>
+                                <td><strong><?php echo esc_html( $g['grupo'] ); ?></strong></td>
+                                <td><?php echo esc_html( $g_leads ); ?></td>
+                                <td><?php echo $g_agend !== null ? esc_html( $g_agend ) : '<span class="dc-nd">—</span>'; ?></td>
+                                <td><?php echo $g_consultas !== null ? esc_html( $g_consultas ) : '<span class="dc-nd">—</span>'; ?></td>
+                                <td><?php echo esc_html( $taxa( $g_agend ?? 0, $g_leads > 0 ? $g_leads : null ) ); ?></td>
+                                <td><?php echo esc_html( $taxa( $g_consultas ?? 0, $g_agend ) ); ?></td>
+                                <td><?php echo esc_html( $taxa( $g_consultas ?? 0, $g_leads > 0 ? $g_leads : null ) ); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Dados para Chart.js (inline para sincronizar com os canvas acima) -->
+            <script>
+            window.DC_PUB_CHART_DATA = <?php echo wp_json_encode( [
+                'evolucao' => [
+                    'labels'    => $chart_labels,
+                    'leads'     => $chart_leads,
+                    'agend'     => $chart_agend,
+                    'consultas' => $chart_consultas,
+                ],
+                'origens' => [
+                    'labels' => $origens_labels,
+                    'data'   => $origens_data,
+                ],
+            ] ); ?>;
+            </script>
+
+            <?php endif; ?>
+
+            <!-- Botão Novo registro -->
+            <div class="dc-painel-card">
+                <h3>Registrar dados</h3>
+                <button type="button" class="dc-btn-primary" id="dc-pub-btn-novo">Novo registro</button>
+            </div>
+
+            <!-- Modal de novo registro -->
+            <div id="dc-pub-modal" class="dc-pub-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="dc-pub-modal-titulo">
+                <div class="dc-pub-modal-inner">
+                    <div class="dc-pub-modal-header">
+                        <h3 id="dc-pub-modal-titulo">Novo Registro</h3>
+                        <button type="button" id="dc-pub-modal-close" class="dc-pub-modal-close" aria-label="Fechar">&times;</button>
+                    </div>
+                    <div id="dc-pub-form-msg"></div>
+                    <form id="dc-pub-form" class="dc-pub-form">
+                        <div class="dc-pub-field dc-pub-field-date">
+                            <label for="dc-pub-data"><strong>Data de fechamento</strong></label>
+                            <input type="date" id="dc-pub-data" name="data_fechamento" required value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>">
+                        </div>
+
+                        <fieldset class="dc-pub-fieldset">
+                            <legend>Origens de Leads</legend>
+                            <div class="dc-pub-fields-grid">
+                                <?php
+                                $campos_origens = [
+                                    'ind_paciente'       => 'Indicação de Paciente',
+                                    'ind_medico'         => 'Indicação de Médico',
+                                    'trafego_pago'       => 'Tráfego Pago',
+                                    'site'               => 'Site',
+                                    'instagram_organico' => 'Instagram Orgânico',
+                                    'paciente_antigo'    => 'Paciente Já da Clínica',
+                                    'outros'             => 'Outros',
+                                    'total_leads'        => 'Total de Leads',
+                                ];
+                                foreach ( $campos_origens as $campo => $label ) : ?>
+                                <div class="dc-pub-field">
+                                    <label for="dc-pub-<?php echo esc_attr( $campo ); ?>"><?php echo esc_html( $label ); ?></label>
+                                    <input type="number" min="0" id="dc-pub-<?php echo esc_attr( $campo ); ?>" name="<?php echo esc_attr( $campo ); ?>" value="0">
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="dc-pub-fieldset">
+                            <legend>Agendamentos</legend>
+                            <div class="dc-pub-fields-grid">
+                                <?php
+                                $campos_agend = [
+                                    'agend_trafego'   => 'Agend. Tráfego',
+                                    'agend_site'      => 'Agend. Site',
+                                    'agend_indicacao' => 'Agend. Indicação',
+                                    'agend_antigos'   => 'Agend. Pacientes Antigos',
+                                ];
+                                foreach ( $campos_agend as $campo => $label ) : ?>
+                                <div class="dc-pub-field">
+                                    <label for="dc-pub-<?php echo esc_attr( $campo ); ?>"><?php echo esc_html( $label ); ?></label>
+                                    <input type="number" min="0" id="dc-pub-<?php echo esc_attr( $campo ); ?>" name="<?php echo esc_attr( $campo ); ?>" value="0">
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="dc-pub-fieldset">
+                            <legend>Consultas Realizadas</legend>
+                            <div class="dc-pub-fields-grid">
+                                <?php
+                                $campos_consultas = [
+                                    'consultas_total'     => 'Consultas Total',
+                                    'consultas_trafego'   => 'Consultas Tráfego',
+                                    'consultas_organico'  => 'Consultas Orgânico',
+                                    'consultas_antigos'   => 'Consultas Pac. Antigos',
+                                    'consultas_indicacao' => 'Consultas Indicação',
+                                ];
+                                foreach ( $campos_consultas as $campo => $label ) : ?>
+                                <div class="dc-pub-field">
+                                    <label for="dc-pub-<?php echo esc_attr( $campo ); ?>"><?php echo esc_html( $label ); ?></label>
+                                    <input type="number" min="0" id="dc-pub-<?php echo esc_attr( $campo ); ?>" name="<?php echo esc_attr( $campo ); ?>" value="0">
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </fieldset>
+
+                        <div class="dc-pub-form-actions">
+                            <button type="submit" id="dc-pub-btn-submit" class="dc-btn-primary">Salvar registro</button>
+                            <button type="button" id="dc-pub-btn-cancelar" class="dc-btn-secondary">Cancelar</button>
+                            <span id="dc-pub-spinner" class="dc-pub-spinner" style="display:none;">Salvando…</span>
+                        </div>
+                    </form>
+                </div>
+            </div><!-- #dc-pub-modal -->
+
+        </div><!-- .dc-painel-wrap -->
+        <?php
+        return ob_get_clean();
+    }
+
+    // ----------------------------------------------------------------
+    // AJAX — salvar registro via formulário estruturado
+    // ----------------------------------------------------------------
+
+    public static function ajax_salvar(): void {
+        check_ajax_referer( 'dc_painel_nonce', 'nonce' );
+
+        $token = sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ?? '' ) );
+        if ( $token === '' || false === get_transient( 'dc_painel_tok_' . $token ) ) {
+            wp_send_json_error( [ 'msg' => 'Sessão expirada. Recarregue a página e faça login novamente.' ], 403 );
+        }
+
+        $data = sanitize_text_field( wp_unslash( $_POST['data_fechamento'] ?? '' ) );
+        if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $data ) ) {
+            wp_send_json_error( [ 'msg' => 'Data inválida.' ] );
+        }
+
+        $campos = [];
+        foreach ( DC_Parser::$campos as $campo ) {
+            $val             = sanitize_text_field( wp_unslash( $_POST[ $campo ] ?? '0' ) );
+            $campos[ $campo ] = max( 0, (int) $val );
+        }
+
+        $sobrescrever = isset( $_POST['sobrescrever'] ) && '1' === $_POST['sobrescrever'];
+
+        $result = DC_DB::salvar( $data, $campos, '', $sobrescrever );
+
+        if ( ! $result['ok'] && $result['duplicado'] ) {
+            wp_send_json_error( [
+                'msg'       => "Já existe um registro para {$data}. Deseja sobrescrever?",
+                'duplicado' => true,
+                'data'      => $data,
+            ] );
+        }
+
+        if ( ! $result['ok'] ) {
+            wp_send_json_error( [ 'msg' => 'Erro ao salvar: ' . esc_html( $result['msg'] ) ] );
+        }
+
+        wp_send_json_success( [
+            'msg' => "Registro de {$data} salvo com sucesso (ID #{$result['id']}).",
+            'id'  => $result['id'],
+        ] );
+    }
+}

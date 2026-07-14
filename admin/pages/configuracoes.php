@@ -4,9 +4,11 @@ if ( ! current_user_can( 'dc_manage' ) ) {
     wp_die( 'Acesso negado.' );
 }
 
-$opcoes = get_option( 'dc_opcoes', [] );
-$salvo  = false;
-$erro   = '';
+$opcoes     = get_option( 'dc_opcoes', [] );
+$salvo      = false;
+$erro       = '';
+$senha_salva = false;
+$senha_erro  = '';
 
 // Handle save.
 if (
@@ -19,6 +21,21 @@ if (
     if ( update_option( 'dc_opcoes', $opcoes ) || true ) {
         $salvo = true;
     }
+
+    // Troca de senha do painel público.
+    if ( ! empty( $_POST['dc_nova_senha'] ) ) {
+        $nova  = wp_unslash( $_POST['dc_nova_senha'] );
+        $conf  = wp_unslash( $_POST['dc_conf_senha'] ?? '' );
+
+        if ( $nova !== $conf ) {
+            $senha_erro = 'As senhas não coincidem.';
+        } elseif ( strlen( $nova ) < 6 ) {
+            $senha_erro = 'A senha deve ter pelo menos 6 caracteres.';
+        } else {
+            update_option( 'dc_painel_senha_hash', password_hash( $nova, PASSWORD_BCRYPT ), false );
+            $senha_salva = true;
+        }
+    }
 }
 ?>
 <div class="wrap dc-wrap">
@@ -26,6 +43,12 @@ if (
 
     <?php if ( $salvo ) : ?>
         <div class="notice notice-success is-dismissible"><p>Configurações salvas.</p></div>
+    <?php endif; ?>
+    <?php if ( $senha_salva ) : ?>
+        <div class="notice notice-success is-dismissible"><p>Senha do painel público atualizada.</p></div>
+    <?php endif; ?>
+    <?php if ( $senha_erro ) : ?>
+        <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $senha_erro ); ?></p></div>
     <?php endif; ?>
 
     <div class="dc-card">
@@ -49,6 +72,23 @@ if (
                 <tr>
                     <th scope="row">Versão do plugin</th>
                     <td><?php echo esc_html( DC_VERSION ); ?></td>
+                </tr>
+                <tr>
+                    <th scope="row">Senha do painel público</th>
+                    <td>
+                        <fieldset>
+                            <p><label for="dc-nova-senha"><strong>Nova senha</strong></label><br>
+                            <input type="password" name="dc_nova_senha" id="dc-nova-senha" autocomplete="new-password" class="regular-text">
+                            </p>
+                            <p><label for="dc-conf-senha"><strong>Confirmar nova senha</strong></label><br>
+                            <input type="password" name="dc_conf_senha" id="dc-conf-senha" autocomplete="new-password" class="regular-text">
+                            </p>
+                        </fieldset>
+                        <p class="description">
+                            Deixe em branco para manter a senha atual.<br>
+                            Shortcode: <code>[diario_clinica_painel]</code>
+                        </p>
+                    </td>
                 </tr>
             </table>
 

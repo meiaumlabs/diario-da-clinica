@@ -22,6 +22,7 @@ require_once DC_PLUGIN_DIR . 'includes/class-parser.php';
 require_once DC_PLUGIN_DIR . 'includes/class-db.php';
 require_once DC_PLUGIN_DIR . 'includes/class-export.php';
 require_once DC_PLUGIN_DIR . 'includes/class-admin.php';
+require_once DC_PLUGIN_DIR . 'includes/class-shortcode-painel.php';
 
 register_activation_hook(   __FILE__, [ 'DC_Activator', 'activate' ] );
 register_deactivation_hook( __FILE__, [ 'DC_Activator', 'deactivate' ] );
@@ -30,6 +31,7 @@ add_action( 'plugins_loaded', function () {
     if ( is_admin() ) {
         new DC_Admin();
     }
+    DC_Shortcode_Painel::init();
 } );
 
 // AJAX handlers.
