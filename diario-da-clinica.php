@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Diário da Clínica
  * Description: Recebe e interpreta o relatório diário de fechamento da recepção, armazena de forma estruturada e gera relatórios consolidados com gráficos e exportação.
- * Version:     1.1.0
+ * Version:     1.2.0
  * Author:      Meia Um Labs
  * License:     GPL-2.0+
  * Text Domain: diario-da-clinica
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DC_VERSION',    '1.1.0' );
+define( 'DC_VERSION',    '1.2.0' );
 define( 'DC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DC_TABLE',      'clinica_relatorios' );
