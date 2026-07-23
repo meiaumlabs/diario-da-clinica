@@ -59,6 +59,12 @@ class DC_Shortcode_Painel {
             DC_VERSION
         );
 
+        // Cores personalizadas (painel externo) — sobrescreve as variáveis padrão.
+        $theme_css = self::inline_theme_css();
+        if ( '' !== $theme_css ) {
+            wp_add_inline_style( 'dc-painel', $theme_css );
+        }
+
         wp_enqueue_script(
             'chartjs',
             'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
@@ -89,9 +95,91 @@ class DC_Shortcode_Painel {
         ] );
     }
 
-    /** Logo 61labs (SVG inline, herda a cor via currentColor). */
-    private static function logo_svg(): string {
-        return '<svg viewBox="0 0 172.33 123.62" fill="currentColor" aria-hidden="true"><path d="M17.58 67.34c2.73 0 4.98-1.99 5.41-4.6h31.1v-1.77h-31.1c-.42-2.61-2.68-4.6-5.41-4.6-3.03 0-5.49 2.46-5.49 5.49s2.46 5.49 5.49 5.49Z"/><path d="M32.41 69.82c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c1.07 0 1.97-.67 2.33-1.62h16.76v-1.77h-16.76c-.36-.94-1.26-1.62-2.33-1.62Z"/><path d="M42.48 106.24c-1.83 0-3.31 1.48-3.31 3.31s1.48 3.31 3.31 3.31c1.61 0 2.94-1.15 3.24-2.66h15.93v-1.77h-16.08c-.46-1.27-1.67-2.19-3.1-2.19Z"/><path d="M51.84 83.92v-1.77H10.89c-.42-2.61-2.68-4.6-5.41-4.6C2.46 77.55 0 80.01 0 83.04s2.46 5.49 5.49 5.49c2.73 0 4.98-1.99 5.41-4.6h40.94Z"/><path d="M55.89 98.89v-1.77h-21.42c-.42-2.61-2.68-4.6-5.41-4.6-3.03 0-5.49 2.46-5.49 5.49s2.46 5.49 5.49 5.49c2.73 0 4.98-1.99 5.41-4.6h21.42Z"/><circle cx="134.75" cy="90.22" r="5.49"/><path d="M160.88 17.97s-11.03 1.09-24.82 18.14h19.05l2.26-1.29-.09 81.27h15.05V17.97h-11.46Z"/><path d="M109.42 39.46l29.67-28.64c.9-.87.94-2.31.08-3.22-.98-1.03-2.63-2.57-5.44-4.76-3.82-2.99-6.94-2.97-8.34-2.74-.47.08-.91.3-1.25.64 0 0-52.46 52.29-52.53 52.38-6.69 7.48-10.77 17.36-10.77 28.19 0 23.37 18.95 42.32 42.32 42.32 13.59 0 25.67-6.41 33.41-16.36l-13.87-9.03c-4.74 5.47-11.73 8.93-19.54 8.93-14.28 0-25.86-11.58-25.86-25.86s11.58-25.86 25.86-25.86c12.55 0 23.01 8.94 25.36 20.8h16.64c-2.26-18.92-16.99-34-35.74-36.79Z"/></svg>';
+    /**
+     * Logotipo do site (definido no WordPress) para o painel externo.
+     * Usa o logo do tema; na ausência, o ícone do site; por fim, a inicial do nome.
+     */
+    private static function site_logo_html(): string {
+        $name = get_bloginfo( 'name' );
+
+        $logo_id = get_theme_mod( 'custom_logo' );
+        if ( $logo_id ) {
+            $src = wp_get_attachment_image_url( $logo_id, 'medium' );
+            if ( $src ) {
+                return '<img class="dc-site-logo" src="' . esc_url( $src ) . '" alt="' . esc_attr( $name ) . '">';
+            }
+        }
+
+        $icon = function_exists( 'get_site_icon_url' ) ? get_site_icon_url( 96 ) : '';
+        if ( $icon ) {
+            return '<img class="dc-site-logo dc-site-logo-icon" src="' . esc_url( $icon ) . '" alt="' . esc_attr( $name ) . '">';
+        }
+
+        $inicial = strtoupper( mb_substr( wp_strip_all_tags( (string) $name ), 0, 1 ) );
+        return '<span class="dc-site-initial" aria-hidden="true">' . esc_html( '' !== $inicial ? $inicial : 'D' ) . '</span>';
+    }
+
+    /** Ícone neutro (barras) para estados vazios — sem marca. */
+    private static function empty_icon_svg(): string {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V10m5 9V5m5 14v-7m5 7V8"/></svg>';
+    }
+
+    // ----------------------------------------------------------------
+    // Tema configurável (cores) — apenas painel externo
+    // ----------------------------------------------------------------
+
+    private static function sanitize_hex( $v ): string {
+        $v = is_string( $v ) ? trim( $v ) : '';
+        return preg_match( '/^#[0-9a-fA-F]{6}$/', $v ) ? strtolower( $v ) : '';
+    }
+
+    private static function darken( string $hex, float $amt ): string {
+        $r = hexdec( substr( $hex, 1, 2 ) );
+        $g = hexdec( substr( $hex, 3, 2 ) );
+        $b = hexdec( substr( $hex, 5, 2 ) );
+        $f = max( 0.0, 1.0 - $amt );
+        return sprintf( '#%02x%02x%02x', (int) round( $r * $f ), (int) round( $g * $f ), (int) round( $b * $f ) );
+    }
+
+    private static function hex_rgba( string $hex, float $a ): string {
+        $r = hexdec( substr( $hex, 1, 2 ) );
+        $g = hexdec( substr( $hex, 3, 2 ) );
+        $b = hexdec( substr( $hex, 5, 2 ) );
+        return sprintf( 'rgba(%d,%d,%d,%s)', $r, $g, $b, rtrim( rtrim( number_format( $a, 2, '.', '' ), '0' ), '.' ) );
+    }
+
+    private static function contrast_ink( string $hex ): string {
+        $r   = hexdec( substr( $hex, 1, 2 ) );
+        $g   = hexdec( substr( $hex, 3, 2 ) );
+        $b   = hexdec( substr( $hex, 5, 2 ) );
+        $lum = ( 0.299 * $r + 0.587 * $g + 0.114 * $b ) / 255;
+        return $lum > 0.62 ? '#0a0c10' : '#ffffff';
+    }
+
+    /** CSS inline que aplica as cores configuradas ao painel externo. */
+    private static function inline_theme_css(): string {
+        $o    = get_option( 'dc_opcoes', [] );
+        $prim = self::sanitize_hex( $o['cor_primaria']   ?? '' );
+        $acc  = self::sanitize_hex( $o['cor_secundaria'] ?? '' );
+        if ( '' === $prim && '' === $acc ) {
+            return '';
+        }
+        $css = '.dc-painel-wrap.dc61,.dc-painel-gate.dc61{';
+        if ( '' !== $prim ) {
+            $css .= '--dc-ink:' . $prim . ';';
+            $css .= '--dc-ink-2:' . self::darken( $prim, 0.12 ) . ';';
+            $css .= '--dc-glow:' . self::hex_rgba( $prim, 0.20 ) . ';';
+        }
+        if ( '' !== $acc ) {
+            $css .= '--dc-signal:' . $acc . ';';
+            $css .= '--dc-signal-d:' . self::darken( $acc, 0.10 ) . ';';
+            $css .= '--dc-signal-ink:' . self::contrast_ink( $acc ) . ';';
+            $css .= '--dc-teal:' . $acc . ';';
+            $css .= '--dc-best:' . self::hex_rgba( $acc, 0.12 ) . ';';
+            $css .= '--dc-focus:' . self::hex_rgba( $acc, 0.18 ) . ';';
+        }
+        $css .= '}';
+        return $css;
     }
 
     /** True se o cookie de sessão for válido. */
@@ -169,7 +257,7 @@ class DC_Shortcode_Painel {
         ?>
         <div class="dc-painel-gate dc61">
             <div class="dc-painel-gate-card">
-                <span class="dc61-gate-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                <span class="dc61-gate-logo"><?php echo self::site_logo_html(); // phpcs:ignore ?></span>
                 <h2 class="dc-painel-gate-titulo">Diário da Clínica</h2>
                 <p>Informe a senha para acessar o painel.</p>
                 <?php if ( 2 === $erro_code ) : ?>
@@ -191,7 +279,7 @@ class DC_Shortcode_Painel {
                     </div>
                     <button type="submit" class="dc-btn-primary">Entrar</button>
                 </form>
-                <p class="dc61-signature"><span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span> Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener"><strong>61 Labs</strong></a></p>
+                <p class="dc61-signature">Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener">61 Labs</a></p>
             </div>
         </div>
         <?php
@@ -282,10 +370,10 @@ class DC_Shortcode_Painel {
         ?>
         <div class="dc-painel-wrap dc61">
 
-            <!-- Header da marca 61labs -->
+            <!-- Header (logotipo do site) -->
             <header class="dc61-header">
                 <div class="dc61-brand">
-                    <span class="dc61-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                    <span class="dc61-logo"><?php echo self::site_logo_html(); // phpcs:ignore ?></span>
                     <div class="dc61-brand-text">
                         <h1>Diário da Clínica</h1>
                         <p>Relatório de conversões da recepção</p>
@@ -320,7 +408,7 @@ class DC_Shortcode_Painel {
 
             <?php if ( empty( $rows ) ) : ?>
                 <div class="dc61-empty">
-                    <span class="dc61-empty-ico" aria-hidden="true"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                    <span class="dc61-empty-ico" aria-hidden="true"><?php echo self::empty_icon_svg(); // phpcs:ignore ?></span>
                     <p>Nenhum dado encontrado para o período selecionado.</p>
                     <button type="button" class="dc61-btn dc61-btn-signal" id="dc-pub-btn-novo-2">Registrar o primeiro dia</button>
                 </div>
@@ -520,10 +608,9 @@ class DC_Shortcode_Painel {
                 </div>
             </section>
 
-            <!-- Assinatura 61labs -->
+            <!-- Assinatura discreta -->
             <footer class="dc61-footer">
-                <span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
-                <span>Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener"><strong>61 Labs</strong></a></span>
+                <span>Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener">61 Labs</a></span>
             </footer>
 
             <!-- Modal WhatsApp -->

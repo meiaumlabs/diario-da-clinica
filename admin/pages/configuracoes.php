@@ -18,6 +18,15 @@ if (
 ) {
     $opcoes['apagar_dados'] = ! empty( $_POST['apagar_dados'] ) ? 1 : 0;
 
+    // Cores do painel público (deixar em branco / restaurar = paleta padrão clean).
+    if ( ! empty( $_POST['cor_reset'] ) ) {
+        $opcoes['cor_primaria']   = '';
+        $opcoes['cor_secundaria'] = '';
+    } else {
+        $opcoes['cor_primaria']   = sanitize_hex_color( wp_unslash( $_POST['cor_primaria']   ?? '' ) ) ?? '';
+        $opcoes['cor_secundaria'] = sanitize_hex_color( wp_unslash( $_POST['cor_secundaria'] ?? '' ) ) ?? '';
+    }
+
     if ( update_option( 'dc_opcoes', $opcoes ) || true ) {
         $salvo = true;
     }
@@ -85,6 +94,31 @@ if (
                         </label>
                         <p class="description">
                             Se desmarcado, os dados permanecem no banco mesmo após desinstalar.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Cores do painel público</th>
+                    <td>
+                        <?php
+                        $cor_primaria   = $opcoes['cor_primaria']   ?? '';
+                        $cor_secundaria = $opcoes['cor_secundaria'] ?? '';
+                        ?>
+                        <p style="margin:0 0 10px;">
+                            <label style="display:inline-block;min-width:190px;">Cor primária (cabeçalho/destaque)</label>
+                            <input type="color" name="cor_primaria" value="<?php echo esc_attr( $cor_primaria ?: '#3f5170' ); ?>">
+                        </p>
+                        <p style="margin:0 0 10px;">
+                            <label style="display:inline-block;min-width:190px;">Cor de destaque (botões/realces)</label>
+                            <input type="color" name="cor_secundaria" value="<?php echo esc_attr( $cor_secundaria ?: '#5c8cf5' ); ?>">
+                        </p>
+                        <p style="margin:0 0 6px;">
+                            <label><input type="checkbox" name="cor_reset" value="1"> Restaurar paleta padrão (clean)</label>
+                        </p>
+                        <p class="description">
+                            Personaliza apenas o <strong>painel do usuário</strong> (shortcode <code>[diario_clinica_painel]</code>).
+                            O logotipo exibido no painel usa o <strong>logo/ícone do site</strong> definido no WordPress.
+                            A área administrativa mantém a identidade 61labs.
                         </p>
                     </td>
                 </tr>

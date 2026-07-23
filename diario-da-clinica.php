@@ -3,7 +3,7 @@
  * Plugin Name: Diário da Clínica
  * Plugin URI:  https://61labs.com.br/diario-da-clinica
  * Description: Recebe e interpreta o relatório diário de fechamento da recepção, armazena de forma estruturada e gera relatórios consolidados com gráficos e exportação.
- * Version:     1.5.1
+ * Version:     1.6.0
  * Author:      61 Labs
  * Author URI:  https://61labs.com.br
  * License:     GPL-2.0+
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DC_VERSION',    '1.5.1' );
+define( 'DC_VERSION',    '1.6.0' );
 define( 'DC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DC_TABLE',      'clinica_relatorios' );

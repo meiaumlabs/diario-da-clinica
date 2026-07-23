@@ -15,14 +15,22 @@
             Chart.register(ChartDataLabels);
         }
 
-        // Paleta 61labs.
-        var INK   = '#0f131b';
-        var LIME  = '#acea4e';
-        var CYAN  = '#56d4cd';
-        var TEAL  = '#0b7a74';
-        var GREEN = '#16a34a';
-        var GRID  = 'rgba(15,19,27,.06)';
-        var MUTED = '#556070';
+        // Paleta lida das variáveis CSS do painel (segue as cores configuradas).
+        function cssVar(name, fallback) {
+            var el = document.querySelector('.dc-painel-wrap.dc61') ||
+                     document.querySelector('.dc61') ||
+                     document.documentElement;
+            var v = el ? getComputedStyle(el).getPropertyValue(name) : '';
+            return (v && v.trim()) || fallback;
+        }
+
+        var INK    = cssVar('--dc-ink',    '#3f5170');
+        var ACCENT = cssVar('--dc-signal', '#5c8cf5');
+        var CYAN   = cssVar('--dc-cyan',   '#7fb2e6');
+        var TEAL   = cssVar('--dc-teal',   '#4a79e6');
+        var GREEN  = cssVar('--dc-green',  '#16a34a');
+        var MUTED  = cssVar('--dc-muted',  '#64748b');
+        var GRID   = 'rgba(36,48,63,.07)';
 
         Chart.defaults.font.family = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
         Chart.defaults.color = MUTED;
@@ -41,7 +49,7 @@
                             label:           'Leads',
                             data:            data.evolucao.leads,
                             borderColor:     INK,
-                            backgroundColor: 'rgba(15,19,27,.06)',
+                            backgroundColor: 'rgba(63,81,112,.06)',
                             pointBackgroundColor: INK,
                             pointRadius:     3,
                             borderWidth:     2.5,
@@ -52,7 +60,7 @@
                             label:           'Agendamentos',
                             data:            data.evolucao.agend,
                             borderColor:     TEAL,
-                            backgroundColor: 'rgba(11,122,116,.08)',
+                            backgroundColor: 'rgba(74,121,230,.08)',
                             pointBackgroundColor: TEAL,
                             pointRadius:     3,
                             borderWidth:     2.5,
@@ -113,8 +121,8 @@
                     datasets: [{
                         data:            data.origens.data,
                         backgroundColor: [
-                            INK, TEAL, CYAN,
-                            GREEN, LIME, '#9bd93c', '#c3c9d2',
+                            INK, TEAL, ACCENT,
+                            GREEN, CYAN, '#94a3b8', '#cbd5e1',
                         ],
                         borderColor: '#ffffff',
                         borderWidth: 3,

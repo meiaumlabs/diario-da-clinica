@@ -1,28 +1,31 @@
 /* ==================================================================
    Diário da Clínica — Painel Público
-   Identidade visual 61labs (ink + signal lime · Space Grotesk / Inter)
+   Tema clean/soft e neutro · cores configuráveis (Space Grotesk / Inter)
    ================================================================== */
 
 .dc61 {
-    --dc-ink:        #0f131b;
-    --dc-ink-2:      #0a0c10;
-    --dc-ink-soft:   #16202b;
-    --dc-signal:     #acea4e;
-    --dc-signal-d:   #9bd93c;
-    --dc-signal-ink: #0a0c10;
-    --dc-cyan:       #56d4cd;
-    --dc-teal:       #0b7a74;
+    --dc-ink:        #3f5170;
+    --dc-ink-2:      #33435c;
+    --dc-ink-soft:   #1f2a37;
+    --dc-signal:     #5c8cf5;
+    --dc-signal-d:   #4a79e6;
+    --dc-signal-ink: #ffffff;
+    --dc-cyan:       #7fb2e6;
+    --dc-teal:       #4a79e6;
     --dc-green:      #16a34a;
     --dc-card:       #ffffff;
-    --dc-card-2:     #f1f3f6;
-    --dc-line:       #e3e7ee;
-    --dc-line-2:     #d9dde4;
-    --dc-text:       #16202b;
-    --dc-muted:      #556070;
+    --dc-card-2:     #f4f6f9;
+    --dc-line:       #e6e9ef;
+    --dc-line-2:     #d8dde6;
+    --dc-text:       #24303f;
+    --dc-muted:      #64748b;
+    --dc-glow:       rgba(120,150,220,.18);
+    --dc-best:       rgba(92,140,245,.10);
+    --dc-focus:      rgba(74,121,230,.18);
     --dc-r:          14px;
     --dc-r-sm:       10px;
-    --dc-shadow:     0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-    --dc-shadow-md:  0 10px 30px rgba(15,19,27,.10), 0 3px 8px rgba(15,19,27,.06);
+    --dc-shadow:     0 1px 3px rgba(16,24,40,.05), 0 1px 2px rgba(16,24,40,.04);
+    --dc-shadow-md:  0 10px 30px rgba(31,42,55,.09), 0 3px 8px rgba(31,42,55,.05);
 
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--dc-text);
@@ -53,7 +56,7 @@
 .dc61-btn-signal {
     background: var(--dc-signal);
     color: var(--dc-signal-ink);
-    box-shadow: 0 2px 10px rgba(172,234,78,.4);
+    box-shadow: 0 2px 8px var(--dc-focus);
 }
 .dc61-btn-signal:hover { background: var(--dc-signal-d); }
 
@@ -86,7 +89,7 @@
     padding: 24px 28px;
     margin-bottom: 20px;
     background: var(--dc-ink);
-    background-image: radial-gradient(120% 160% at 100% 0%, rgba(172,234,78,.18), transparent 55%);
+    background-image: radial-gradient(120% 160% at 100% 0%, var(--dc-glow), transparent 55%);
     border-radius: 18px;
     box-shadow: var(--dc-shadow-md);
     color: #fff;
@@ -94,14 +97,16 @@
 .dc61-brand { display: flex; align-items: center; gap: 16px; }
 .dc61-logo {
     width: 54px; height: 54px;
-    border-radius: 14px;
+    border-radius: 12px;
     display: inline-flex; align-items: center; justify-content: center;
-    color: var(--dc-signal);
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.09);
+    background: #fff;
+    border: 1px solid rgba(255,255,255,.5);
+    overflow: hidden;
+    padding: 6px;
     flex-shrink: 0;
 }
-.dc61-logo svg { width: 34px; height: 34px; }
+.dc61-logo .dc-site-logo { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.dc61-logo .dc-site-initial { width: 100%; height: 100%; border-radius: 8px; }
 .dc61-brand-text h1 {
     font-family: 'Space Grotesk', -apple-system, sans-serif;
     font-size: 24px; font-weight: 700;
@@ -143,7 +148,7 @@
 .dc61-filtro input[type="date"]:focus {
     outline: none;
     border-color: var(--dc-teal);
-    box-shadow: 0 0 0 3px rgba(11,122,116,.12);
+    box-shadow: 0 0 0 3px var(--dc-focus);
 }
 .dc61-periodo { font-size: 13px; color: var(--dc-muted); font-weight: 500; }
 
@@ -203,7 +208,7 @@
     gap: 20px;
     flex-wrap: wrap;
     background: var(--dc-ink);
-    background-image: radial-gradient(130% 180% at 0% 0%, rgba(172,234,78,.16), transparent 50%);
+    background-image: radial-gradient(130% 180% at 0% 0%, var(--dc-glow), transparent 50%);
     color: #fff;
     border-radius: var(--dc-r);
     padding: 24px 28px;
@@ -303,9 +308,9 @@
 }
 .dc61-table tbody td:first-child { text-align: left; }
 .dc61-table tbody tr:last-child td { border-bottom: 0; }
-.dc61-table tbody tr:hover { background: #fafcf7; }
+.dc61-table tbody tr:hover { background: #f6f9fe; }
 
-.dc61-row-best { background: rgba(172,234,78,.12) !important; }
+.dc61-row-best { background: var(--dc-best) !important; }
 .dc61-row-best td { font-weight: 600; }
 .dc61-tag {
     display: inline-block; vertical-align: middle;
@@ -335,18 +340,21 @@
 .dc61-empty p { color: var(--dc-muted); margin: 0 0 16px; }
 
 /* ------------------------------------------------------------------
-   Assinatura 61labs
+   Logotipo do site (fallback com inicial) + assinatura discreta
    ------------------------------------------------------------------ */
+.dc-site-initial {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--dc-signal); color: var(--dc-signal-ink);
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    line-height: 1;
+}
 .dc61-footer {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    color: var(--dc-muted); font-size: 12.5px;
-    padding: 4px 0 8px;
+    color: var(--dc-muted); font-size: 12px;
+    padding: 6px 0 10px;
 }
-.dc61-footer strong { color: var(--dc-ink-soft); }
-.dc61-footer a, .dc61-signature a { color: inherit; text-decoration: none; }
-.dc61-footer a:hover, .dc61-signature a:hover { color: var(--dc-teal, #0b7a74); text-decoration: underline; }
-.dc61-signature-logo { display: inline-flex; width: 16px; height: 16px; color: var(--dc-ink); }
-.dc61-signature-logo svg { width: 16px; height: 16px; }
+.dc61-footer a, .dc61-signature a { color: var(--dc-muted); text-decoration: none; }
+.dc61-footer a:hover, .dc61-signature a:hover { color: var(--dc-teal); text-decoration: underline; }
 
 /* ==================================================================
    Gate de senha
@@ -368,15 +376,13 @@
     text-align: center;
 }
 .dc61-gate-logo {
-    display: inline-flex; width: 60px; height: 60px;
+    display: inline-flex;
     align-items: center; justify-content: center;
-    border-radius: 16px;
-    background: var(--dc-ink, #0f131b);
-    background-image: radial-gradient(120% 140% at 100% 0%, rgba(172,234,78,.22), transparent 60%);
-    color: var(--dc-signal, #acea4e);
-    margin-bottom: 12px;
+    max-width: 200px; max-height: 72px;
+    margin-bottom: 14px;
 }
-.dc61-gate-logo svg { width: 36px; height: 36px; }
+.dc61-gate-logo .dc-site-logo { max-width: 200px; max-height: 72px; object-fit: contain; display: block; }
+.dc61-gate-logo .dc-site-initial { width: 60px; height: 60px; border-radius: 16px; font-size: 26px; }
 .dc-painel-gate-titulo {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 1.5em; font-weight: 700;
