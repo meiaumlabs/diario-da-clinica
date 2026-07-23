@@ -46,9 +46,16 @@ class DC_Shortcode_Painel {
 
     public static function enqueue_assets(): void {
         wp_enqueue_style(
+            'dc-painel-fonts',
+            'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap',
+            [],
+            null
+        );
+
+        wp_enqueue_style(
             'dc-painel',
             DC_PLUGIN_URL . 'public/css/painel.css',
-            [],
+            [ 'dc-painel-fonts' ],
             DC_VERSION
         );
 
@@ -80,6 +87,11 @@ class DC_Shortcode_Painel {
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'dc_painel_nonce' ),
         ] );
+    }
+
+    /** Logo 61labs (SVG inline, herda a cor via currentColor). */
+    private static function logo_svg(): string {
+        return '<svg viewBox="0 0 172.33 123.62" fill="currentColor" aria-hidden="true"><path d="M17.58 67.34c2.73 0 4.98-1.99 5.41-4.6h31.1v-1.77h-31.1c-.42-2.61-2.68-4.6-5.41-4.6-3.03 0-5.49 2.46-5.49 5.49s2.46 5.49 5.49 5.49Z"/><path d="M32.41 69.82c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c1.07 0 1.97-.67 2.33-1.62h16.76v-1.77h-16.76c-.36-.94-1.26-1.62-2.33-1.62Z"/><path d="M42.48 106.24c-1.83 0-3.31 1.48-3.31 3.31s1.48 3.31 3.31 3.31c1.61 0 2.94-1.15 3.24-2.66h15.93v-1.77h-16.08c-.46-1.27-1.67-2.19-3.1-2.19Z"/><path d="M51.84 83.92v-1.77H10.89c-.42-2.61-2.68-4.6-5.41-4.6C2.46 77.55 0 80.01 0 83.04s2.46 5.49 5.49 5.49c2.73 0 4.98-1.99 5.41-4.6h40.94Z"/><path d="M55.89 98.89v-1.77h-21.42c-.42-2.61-2.68-4.6-5.41-4.6-3.03 0-5.49 2.46-5.49 5.49s2.46 5.49 5.49 5.49c2.73 0 4.98-1.99 5.41-4.6h21.42Z"/><circle cx="134.75" cy="90.22" r="5.49"/><path d="M160.88 17.97s-11.03 1.09-24.82 18.14h19.05l2.26-1.29-.09 81.27h15.05V17.97h-11.46Z"/><path d="M109.42 39.46l29.67-28.64c.9-.87.94-2.31.08-3.22-.98-1.03-2.63-2.57-5.44-4.76-3.82-2.99-6.94-2.97-8.34-2.74-.47.08-.91.3-1.25.64 0 0-52.46 52.29-52.53 52.38-6.69 7.48-10.77 17.36-10.77 28.19 0 23.37 18.95 42.32 42.32 42.32 13.59 0 25.67-6.41 33.41-16.36l-13.87-9.03c-4.74 5.47-11.73 8.93-19.54 8.93-14.28 0-25.86-11.58-25.86-25.86s11.58-25.86 25.86-25.86c12.55 0 23.01 8.94 25.36 20.8h16.64c-2.26-18.92-16.99-34-35.74-36.79Z"/></svg>';
     }
 
     /** True se o cookie de sessão for válido. */
@@ -155,10 +167,11 @@ class DC_Shortcode_Painel {
         $nonce = wp_create_nonce( 'dc_painel_auth' );
         ob_start();
         ?>
-        <div class="dc-painel-gate">
+        <div class="dc-painel-gate dc61">
             <div class="dc-painel-gate-card">
-                <h2 class="dc-painel-gate-titulo">Painel da Clínica</h2>
-                <p>Informe a senha para acessar os dados.</p>
+                <span class="dc61-gate-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                <h2 class="dc-painel-gate-titulo">Diário da Clínica</h2>
+                <p>Informe a senha para acessar o painel.</p>
                 <?php if ( 2 === $erro_code ) : ?>
                     <p class="dc-painel-erro" role="alert">Sua sessão do formulário expirou (provável cache da página). Recarregue a página e tente novamente.</p>
                 <?php elseif ( $erro_code > 0 ) : ?>
@@ -178,6 +191,7 @@ class DC_Shortcode_Painel {
                     </div>
                     <button type="submit" class="dc-btn-primary">Entrar</button>
                 </form>
+                <p class="dc61-signature"><span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span> Desenvolvido por <strong>61labs</strong></p>
             </div>
         </div>
         <?php
@@ -266,99 +280,157 @@ class DC_Shortcode_Painel {
 
         ob_start();
         ?>
-        <div class="dc-painel-wrap">
+        <div class="dc-painel-wrap dc61">
 
-            <!-- Filtro de período -->
-            <div class="dc-painel-card">
-                <form method="GET" action="<?php echo $page_url; ?>" class="dc-painel-form-filtro">
-                    <label><strong>De:</strong>
-                        <input type="date" name="dc_de" value="<?php echo esc_attr( $de ); ?>" required>
-                    </label>
-                    <label><strong>Até:</strong>
-                        <input type="date" name="dc_ate" value="<?php echo esc_attr( $ate ); ?>" required>
-                    </label>
-                    <button type="submit" class="dc-btn-primary">Consultar</button>
+            <!-- Header da marca 61labs -->
+            <header class="dc61-header">
+                <div class="dc61-brand">
+                    <span class="dc61-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                    <div class="dc61-brand-text">
+                        <h1>Diário da Clínica</h1>
+                        <p>Relatório de conversões da recepção</p>
+                    </div>
+                </div>
+                <div class="dc61-header-actions">
+                    <button type="button" class="dc61-btn dc61-btn-signal" id="dc-pub-btn-novo">
+                        <span class="dc61-btn-ico" aria-hidden="true">+</span> Novo registro
+                    </button>
+                </div>
+            </header>
+
+            <!-- Barra de período -->
+            <div class="dc61-toolbar">
+                <form method="GET" action="<?php echo $page_url; ?>" class="dc61-filtro">
+                    <div class="dc61-filtro-fields">
+                        <label>De
+                            <input type="date" name="dc_de" value="<?php echo esc_attr( $de ); ?>" required>
+                        </label>
+                        <label>Até
+                            <input type="date" name="dc_ate" value="<?php echo esc_attr( $ate ); ?>" required>
+                        </label>
+                    </div>
+                    <button type="submit" class="dc61-btn dc61-btn-ink">Consultar</button>
                 </form>
-            </div>
-
-            <?php if ( $campeao_conv ) : ?>
-            <!-- Hero: origem com mais conversões -->
-            <div class="dc-painel-hero">
-                <span class="dc-painel-hero-label">Origem com mais conversões</span>
-                <span class="dc-painel-hero-value"><?php echo esc_html( $campeao_conv['grupo'] ); ?></span>
-                <span class="dc-painel-hero-detail">
-                    <?php echo esc_html( round( $campeao_conv['consultas'] / $campeao_conv['leads'] * 100, 1 ) ); ?>%
-                    &mdash;
-                    <?php echo esc_html( $campeao_conv['consultas'] ); ?> consultas
-                    de <?php echo esc_html( $campeao_conv['leads'] ); ?> leads
+                <span class="dc61-periodo">
+                    <?php echo esc_html( date( 'd/m/Y', strtotime( $de ) ) ); ?>
+                    &rarr;
+                    <?php echo esc_html( date( 'd/m/Y', strtotime( $ate ) ) ); ?>
                 </span>
             </div>
-            <?php endif; ?>
 
             <?php if ( empty( $rows ) ) : ?>
-                <p class="dc-painel-vazio">Nenhum dado encontrado para o período selecionado.</p>
+                <div class="dc61-empty">
+                    <span class="dc61-empty-ico" aria-hidden="true"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                    <p>Nenhum dado encontrado para o período selecionado.</p>
+                    <button type="button" class="dc61-btn dc61-btn-signal" id="dc-pub-btn-novo-2">Registrar o primeiro dia</button>
+                </div>
             <?php else : ?>
 
             <!-- Métricas resumidas -->
-            <div class="dc-painel-metrics-grid">
-                <div class="dc-painel-metric">
-                    <span class="dc-painel-metric-val"><?php echo esc_html( $totais['total_leads'] ); ?></span>
-                    <span class="dc-painel-metric-lbl">Total de Leads</span>
+            <div class="dc61-metrics">
+                <div class="dc61-metric">
+                    <span class="dc61-metric-lbl">Total de Leads</span>
+                    <span class="dc61-metric-val"><?php echo esc_html( $totais['total_leads'] ); ?></span>
+                    <span class="dc61-metric-hint">no período</span>
                 </div>
-                <div class="dc-painel-metric">
-                    <span class="dc-painel-metric-val"><?php echo esc_html( $total_agend ); ?></span>
-                    <span class="dc-painel-metric-lbl">Agendamentos</span>
+                <div class="dc61-metric">
+                    <span class="dc61-metric-lbl">Agendamentos</span>
+                    <span class="dc61-metric-val"><?php echo esc_html( $total_agend ); ?></span>
+                    <span class="dc61-metric-hint">agendados</span>
                 </div>
-                <div class="dc-painel-metric">
-                    <span class="dc-painel-metric-val"><?php echo esc_html( $totais['consultas_total'] ); ?></span>
-                    <span class="dc-painel-metric-lbl">Consultas</span>
+                <div class="dc61-metric">
+                    <span class="dc61-metric-lbl">Consultas</span>
+                    <span class="dc61-metric-val"><?php echo esc_html( $totais['consultas_total'] ); ?></span>
+                    <span class="dc61-metric-hint">realizadas</span>
                 </div>
-                <div class="dc-painel-metric dc-painel-metric-conv">
-                    <span class="dc-painel-metric-val"><?php echo $conv_la !== null ? esc_html( $conv_la ) . '%' : '—'; ?></span>
-                    <span class="dc-painel-metric-lbl">Conv. Leads→Agend.</span>
+                <div class="dc61-metric dc61-metric-conv">
+                    <span class="dc61-metric-lbl">Conv. Leads &rarr; Agend.</span>
+                    <span class="dc61-metric-val"><?php echo $conv_la !== null ? esc_html( $conv_la ) . '%' : '—'; ?></span>
+                    <span class="dc61-metric-hint">taxa de agendamento</span>
                 </div>
-                <div class="dc-painel-metric dc-painel-metric-conv">
-                    <span class="dc-painel-metric-val"><?php echo $conv_ac !== null ? esc_html( $conv_ac ) . '%' : '—'; ?></span>
-                    <span class="dc-painel-metric-lbl">Conv. Agend.→Consul.</span>
+                <div class="dc61-metric dc61-metric-conv">
+                    <span class="dc61-metric-lbl">Conv. Agend. &rarr; Consul.</span>
+                    <span class="dc61-metric-val"><?php echo $conv_ac !== null ? esc_html( $conv_ac ) . '%' : '—'; ?></span>
+                    <span class="dc61-metric-hint">taxa de comparecimento</span>
                 </div>
             </div>
 
-            <!-- Gráficos (idênticos ao admin) -->
-            <div class="dc-painel-charts-grid">
-                <div class="dc-painel-card dc-painel-chart-card">
-                    <h3>Evolução diária</h3>
-                    <canvas id="dc-pub-chart-evolucao" height="120"></canvas>
+            <?php if ( $campeao_conv ) :
+                $campeao_taxa = round( $campeao_conv['consultas'] / $campeao_conv['leads'] * 100, 1 );
+            ?>
+            <!-- Destaque: origem com mais conversões -->
+            <section class="dc61-hero">
+                <div class="dc61-hero-badge" aria-hidden="true">★ Destaque</div>
+                <div class="dc61-hero-body">
+                    <span class="dc61-hero-label">Origem com mais conversões</span>
+                    <span class="dc61-hero-name"><?php echo esc_html( $campeao_conv['grupo'] ); ?></span>
+                    <span class="dc61-hero-detail">
+                        <?php echo esc_html( $campeao_conv['consultas'] ); ?> consultas
+                        de <?php echo esc_html( $campeao_conv['leads'] ); ?> leads
+                    </span>
                 </div>
-                <div class="dc-painel-card dc-painel-chart-card">
-                    <h3>Distribuição de origens</h3>
-                    <canvas id="dc-pub-chart-origens" height="120"></canvas>
+                <div class="dc61-hero-rate">
+                    <span class="dc61-hero-rate-val"><?php echo esc_html( $campeao_taxa ); ?>%</span>
+                    <span class="dc61-hero-rate-lbl">Leads &rarr; Consultas</span>
                 </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- Gráficos -->
+            <div class="dc61-charts">
+                <section class="dc61-card dc61-chart">
+                    <header class="dc61-card-head">
+                        <h3>Evolução diária</h3>
+                        <span class="dc61-card-sub">Leads · Agendamentos · Consultas</span>
+                    </header>
+                    <div class="dc61-chart-canvas">
+                        <canvas id="dc-pub-chart-evolucao" height="120"></canvas>
+                    </div>
+                </section>
+                <section class="dc61-card dc61-chart">
+                    <header class="dc61-card-head">
+                        <h3>Distribuição de origens</h3>
+                        <span class="dc61-card-sub">Participação de cada canal</span>
+                    </header>
+                    <div class="dc61-chart-canvas">
+                        <canvas id="dc-pub-chart-origens" height="120"></canvas>
+                    </div>
+                </section>
             </div>
 
             <!-- Funil de conversão por origem -->
-            <div class="dc-painel-card">
-                <h3>Conversão por origem</h3>
-                <div class="dc-painel-table-wrap">
-                    <table class="dc-painel-table">
+            <section class="dc61-card">
+                <header class="dc61-card-head">
+                    <h3>Conversão por origem</h3>
+                    <span class="dc61-card-sub">Da captação à consulta realizada</span>
+                </header>
+                <div class="dc61-table-wrap">
+                    <table class="dc61-table dc61-table-funil">
                         <thead>
                             <tr>
                                 <th>Origem</th>
                                 <th>Leads</th>
                                 <th>Agend.</th>
                                 <th>Consultas</th>
-                                <th>Taxa L→A</th>
-                                <th>Taxa A→C</th>
-                                <th>Taxa L→C</th>
+                                <th>Taxa L&rarr;A</th>
+                                <th>Taxa A&rarr;C</th>
+                                <th>Taxa L&rarr;C</th>
                             </tr>
                         </thead>
                         <tbody>
-                        <?php foreach ( $funil as $g ) :
+                        <?php
+                        $campeao_nome = $campeao_conv['grupo'] ?? null;
+                        foreach ( $funil as $g ) :
                             $g_leads     = (int) $g['leads'];
                             $g_agend     = $g['agend'] !== null ? (int) $g['agend'] : null;
                             $g_consultas = $g['consultas'] !== null ? (int) $g['consultas'] : null;
+                            $is_best     = ( $campeao_nome !== null && $g['grupo'] === $campeao_nome );
                         ?>
-                            <tr>
-                                <td><strong><?php echo esc_html( $g['grupo'] ); ?></strong></td>
+                            <tr<?php echo $is_best ? ' class="dc61-row-best"' : ''; ?>>
+                                <td>
+                                    <strong><?php echo esc_html( $g['grupo'] ); ?></strong>
+                                    <?php echo $is_best ? ' <span class="dc61-tag">Campeã</span>' : ''; ?>
+                                </td>
                                 <td><?php echo esc_html( $g_leads ); ?></td>
                                 <td><?php echo $g_agend !== null ? esc_html( $g_agend ) : '<span class="dc-nd">—</span>'; ?></td>
                                 <td><?php echo $g_consultas !== null ? esc_html( $g_consultas ) : '<span class="dc-nd">—</span>'; ?></td>
@@ -370,7 +442,7 @@ class DC_Shortcode_Painel {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
             <!-- Dados para Chart.js (inline para sincronizar com os canvas acima) -->
             <script>
@@ -390,24 +462,21 @@ class DC_Shortcode_Painel {
 
             <?php endif; ?>
 
-            <!-- Botão Novo registro -->
-            <div class="dc-painel-card">
-                <h3>Registrar dados</h3>
-                <button type="button" class="dc-btn-primary" id="dc-pub-btn-novo">Novo registro</button>
-            </div>
-
             <!-- Histórico de registros -->
-            <div class="dc-painel-card" id="dc-pub-historico-card">
-                <h3>Histórico de registros</h3>
-                <div class="dc-painel-table-wrap">
-                    <table class="dc-painel-table" id="dc-pub-historico-table">
+            <section class="dc61-card" id="dc-pub-historico-card">
+                <header class="dc61-card-head">
+                    <h3>Histórico de registros</h3>
+                    <span class="dc61-card-sub">Últimos fechamentos enviados</span>
+                </header>
+                <div class="dc61-table-wrap">
+                    <table class="dc61-table dc61-table-hist" id="dc-pub-historico-table">
                         <thead>
                             <tr>
                                 <th>Data</th>
                                 <th>Leads</th>
                                 <th>Agend.</th>
                                 <th>Consultas</th>
-                                <th>WhatsApp</th>
+                                <th class="dc61-col-acoes">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="dc-pub-historico-tbody">
@@ -423,25 +492,39 @@ class DC_Shortcode_Painel {
                                          + $h_campos['agend_indicacao'] + $h_campos['agend_antigos'];
                                 $h_iso   = date( 'Y-m-d', strtotime( $hr->data_fechamento ) );
                                 $h_br    = date( 'd/m/Y', strtotime( $hr->data_fechamento ) );
+                                $h_json  = wp_json_encode( $h_campos );
                         ?>
                             <tr data-data="<?php echo esc_attr( $h_iso ); ?>">
                                 <td><strong><?php echo esc_html( $h_br ); ?></strong></td>
                                 <td><?php echo esc_html( $h_campos['total_leads'] ); ?></td>
                                 <td><?php echo esc_html( $h_agend ); ?></td>
                                 <td><?php echo esc_html( $h_campos['consultas_total'] ); ?></td>
-                                <td>
-                                    <button type="button" class="dc-btn-secondary dc-pub-wa-btn"
-                                            data-data="<?php echo esc_attr( $h_iso ); ?>"
-                                            data-campos="<?php echo esc_attr( wp_json_encode( $h_campos ) ); ?>">
-                                        Copiar WhatsApp
-                                    </button>
+                                <td class="dc61-col-acoes">
+                                    <div class="dc61-row-actions">
+                                        <button type="button" class="dc61-btn dc61-btn-ghost dc-pub-edit-btn"
+                                                data-data="<?php echo esc_attr( $h_iso ); ?>"
+                                                data-campos="<?php echo esc_attr( $h_json ); ?>">
+                                            Editar
+                                        </button>
+                                        <button type="button" class="dc61-btn dc61-btn-ghost dc-pub-wa-btn"
+                                                data-data="<?php echo esc_attr( $h_iso ); ?>"
+                                                data-campos="<?php echo esc_attr( $h_json ); ?>">
+                                            WhatsApp
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
+
+            <!-- Assinatura 61labs -->
+            <footer class="dc61-footer">
+                <span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
+                <span>Desenvolvido por <strong>61labs</strong></span>
+            </footer>
 
             <!-- Modal WhatsApp -->
             <div id="dc-pub-wa-modal" class="dc-pub-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="dc-pub-wa-titulo">
@@ -452,7 +535,7 @@ class DC_Shortcode_Painel {
                     </div>
                     <textarea id="dc-pub-wa-text" class="dc-pub-wa-text" rows="18" readonly></textarea>
                     <div class="dc-pub-wa-actions">
-                        <button type="button" id="dc-pub-wa-copy" class="dc-btn-primary">📋 Copiar</button>
+                        <button type="button" id="dc-pub-wa-copy" class="dc61-btn dc61-btn-signal">📋 Copiar</button>
                         <span id="dc-pub-wa-feedback" class="dc-pub-wa-feedback" aria-live="polite"></span>
                     </div>
                 </div>
@@ -467,20 +550,21 @@ class DC_Shortcode_Painel {
                     </div>
                     <div id="dc-pub-form-msg"></div>
 
-                    <div class="dc-pub-import">
-                        <label for="dc-pub-import-texto"><strong>Importar colando o texto do fechamento</strong></label>
-                        <textarea
-                            id="dc-pub-import-texto"
-                            class="dc-pub-import-textarea"
-                            rows="8"
-                            placeholder="Fechamento do dia DD/MM/AAAA&#10;Origem LEADS&#10;👥 Indicação de paciente: 0&#10;👨‍⚕️ Indicação de médico: 0&#10;💰 Tráfego pago: 0&#10;..."></textarea>
-                        <div class="dc-pub-import-actions">
-                            <button type="button" id="dc-pub-btn-importar" class="dc-btn-secondary">Processar texto</button>
-                            <span class="dc-pub-import-hint">Os campos abaixo serão preenchidos automaticamente. Revise e clique em “Salvar registro”.</span>
+                    <div id="dc-pub-import-block">
+                        <div class="dc-pub-import">
+                            <label for="dc-pub-import-texto"><strong>Importar colando o texto do fechamento</strong></label>
+                            <textarea
+                                id="dc-pub-import-texto"
+                                class="dc-pub-import-textarea"
+                                rows="8"
+                                placeholder="Fechamento do dia DD/MM/AAAA&#10;Origem LEADS&#10;👥 Indicação de paciente: 0&#10;👨‍⚕️ Indicação de médico: 0&#10;💰 Tráfego pago: 0&#10;..."></textarea>
+                            <div class="dc-pub-import-actions">
+                                <button type="button" id="dc-pub-btn-importar" class="dc61-btn dc61-btn-ink">Processar texto</button>
+                                <span class="dc-pub-import-hint">Os campos abaixo serão preenchidos automaticamente. Revise e clique em “Salvar registro”.</span>
+                            </div>
                         </div>
+                        <hr class="dc-pub-sep">
                     </div>
-
-                    <hr class="dc-pub-sep">
 
                     <form id="dc-pub-form" class="dc-pub-form">
                         <div class="dc-pub-field dc-pub-field-date">
@@ -551,8 +635,8 @@ class DC_Shortcode_Painel {
                         </fieldset>
 
                         <div class="dc-pub-form-actions">
-                            <button type="submit" id="dc-pub-btn-submit" class="dc-btn-primary">Salvar registro</button>
-                            <button type="button" id="dc-pub-btn-cancelar" class="dc-btn-secondary">Cancelar</button>
+                            <button type="submit" id="dc-pub-btn-submit" class="dc61-btn dc61-btn-signal">Salvar registro</button>
+                            <button type="button" id="dc-pub-btn-cancelar" class="dc61-btn dc61-btn-ghost">Cancelar</button>
                             <span id="dc-pub-spinner" class="dc-pub-spinner" style="display:none;">Salvando…</span>
                         </div>
                     </form>

@@ -15,6 +15,18 @@
             Chart.register(ChartDataLabels);
         }
 
+        // Paleta 61labs.
+        var INK   = '#0f131b';
+        var LIME  = '#acea4e';
+        var CYAN  = '#56d4cd';
+        var TEAL  = '#0b7a74';
+        var GREEN = '#16a34a';
+        var GRID  = 'rgba(15,19,27,.06)';
+        var MUTED = '#556070';
+
+        Chart.defaults.font.family = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
+        Chart.defaults.color = MUTED;
+
         var data = window.DC_PUB_CHART_DATA;
 
         // Gráfico de linha — evolução.
@@ -28,37 +40,64 @@
                         {
                             label:           'Leads',
                             data:            data.evolucao.leads,
-                            borderColor:     '#1d4ed8',
-                            backgroundColor: 'rgba(29,78,216,.1)',
-                            tension:         0.3,
+                            borderColor:     INK,
+                            backgroundColor: 'rgba(15,19,27,.06)',
+                            pointBackgroundColor: INK,
+                            pointRadius:     3,
+                            borderWidth:     2.5,
+                            tension:         0.35,
                             fill:            true,
                         },
                         {
                             label:           'Agendamentos',
                             data:            data.evolucao.agend,
-                            borderColor:     '#7c3aed',
-                            backgroundColor: 'rgba(124,58,237,.08)',
-                            tension:         0.3,
+                            borderColor:     TEAL,
+                            backgroundColor: 'rgba(11,122,116,.08)',
+                            pointBackgroundColor: TEAL,
+                            pointRadius:     3,
+                            borderWidth:     2.5,
+                            tension:         0.35,
                             fill:            true,
                         },
                         {
                             label:           'Consultas',
                             data:            data.evolucao.consultas,
-                            borderColor:     '#059669',
-                            backgroundColor: 'rgba(5,150,105,.08)',
-                            tension:         0.3,
+                            borderColor:     GREEN,
+                            backgroundColor: 'rgba(22,163,74,.10)',
+                            pointBackgroundColor: GREEN,
+                            pointRadius:     3,
+                            borderWidth:     2.5,
+                            tension:         0.35,
                             fill:            true,
                         },
                     ],
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend:     { position: 'top' },
+                        legend:     {
+                            position: 'top',
+                            align:    'end',
+                            labels:   { usePointStyle: true, boxWidth: 8, padding: 16 },
+                        },
                         datalabels: { display: false },
+                        tooltip: {
+                            backgroundColor: INK,
+                            padding:   10,
+                            cornerRadius: 8,
+                            titleColor: '#fff',
+                            bodyColor: '#e6eaf0',
+                        },
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 },
+                            grid:  { color: GRID, drawBorder: false },
+                        },
+                        x: { grid: { display: false } },
                     },
                 },
             });
@@ -74,16 +113,23 @@
                     datasets: [{
                         data:            data.origens.data,
                         backgroundColor: [
-                            '#1d4ed8','#7c3aed','#db2777',
-                            '#059669','#d97706','#dc2626','#6b7280',
+                            INK, TEAL, CYAN,
+                            GREEN, LIME, '#9bd93c', '#c3c9d2',
                         ],
-                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 6,
                     }],
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '58%',
                     plugins: {
-                        legend: { position: 'right' },
+                        legend: {
+                            position: 'right',
+                            labels: { usePointStyle: true, boxWidth: 8, padding: 12 },
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function (ctx) {
@@ -116,8 +162,9 @@
     // =========================================================
     // Modal de novo registro
     // =========================================================
-    var $modal, $form, $msgArea, $btnSubmit, $btnCancelar, $spinner;
+    var $modal, $form, $msgArea, $btnSubmit, $btnCancelar, $spinner, $modalTitulo, $importBlock;
     var pendingOverwrite = false;
+    var editMode = false;
 
     function initModal() {
         $modal      = $('#dc-pub-modal');
@@ -126,17 +173,18 @@
         $btnSubmit  = $('#dc-pub-btn-submit');
         $btnCancelar = $('#dc-pub-btn-cancelar');
         $spinner    = $('#dc-pub-spinner');
+        $modalTitulo = $('#dc-pub-modal-titulo');
+        $importBlock = $('#dc-pub-import-block');
 
         if (!$modal.length) return;
 
-        // Abrir modal.
-        $('#dc-pub-btn-novo').on('click', function () {
-            pendingOverwrite = false;
-            $msgArea.empty();
-            $form[0].reset();
-            $('#dc-pub-import-texto').val('');
-            $modal.show();
-            $modal.find('input[type="date"]').val(today());
+        // Abrir modal para novo registro.
+        $('#dc-pub-btn-novo, #dc-pub-btn-novo-2').on('click', openNovo);
+
+        // Editar registro existente (delegado — cobre linhas dinâmicas).
+        $('#dc-pub-historico-tbody').on('click', '.dc-pub-edit-btn', function () {
+            var $btn = $(this);
+            openEdit($btn.data('data'), $btn.data('campos'));
         });
 
         // Importar via texto colado.
@@ -155,15 +203,47 @@
         // Submit.
         $form.on('submit', function (e) {
             e.preventDefault();
-            salvar(false);
+            salvar(editMode);
         });
+    }
+
+    function openNovo() {
+        editMode = false;
+        pendingOverwrite = false;
+        $msgArea.empty();
+        $form[0].reset();
+        $('#dc-pub-import-texto').val('');
+        if ($importBlock.length) $importBlock.show();
+        $('#dc-pub-data').prop('readonly', false);
+        if ($modalTitulo.length) $modalTitulo.text('Novo Registro');
+        $btnSubmit.text('Salvar registro');
+        $modal.show();
+        $modal.find('input[type="date"]').val(today());
+    }
+
+    function openEdit(dataIso, campos) {
+        editMode = true;
+        pendingOverwrite = false;
+        $msgArea.empty();
+        $form[0].reset();
+        $('#dc-pub-import-texto').val('');
+        // Na edição, escondemos a importação por texto e travamos a data.
+        if ($importBlock.length) $importBlock.hide();
+        preencherForm(dataIso, campos);
+        $('#dc-pub-data').prop('readonly', true);
+        if ($modalTitulo.length) $modalTitulo.text('Editar registro — ' + formatDataBR(dataIso));
+        $btnSubmit.text('Salvar alterações');
+        $modal.show();
     }
 
     function closeModal() {
         $modal.hide();
         pendingOverwrite = false;
+        editMode = false;
         $msgArea.empty();
         $('#dc-pub-import-texto').val('');
+        $('#dc-pub-data').prop('readonly', false);
+        if ($importBlock.length) $importBlock.show();
     }
 
     function importarTexto() {
@@ -409,10 +489,15 @@
         $row.append($('<td>').text(agend));
         $row.append($('<td>').text(parseInt(campos.consultas_total, 10) || 0));
 
-        var $btn = $('<button type="button" class="dc-btn-secondary dc-pub-wa-btn">Copiar WhatsApp</button>')
+        var camposJson = JSON.stringify(campos);
+        var $edit = $('<button type="button" class="dc61-btn dc61-btn-ghost dc-pub-edit-btn">Editar</button>')
             .attr('data-data', dataIso)
-            .attr('data-campos', JSON.stringify(campos));
-        $row.append($('<td>').append($btn));
+            .attr('data-campos', camposJson);
+        var $wa = $('<button type="button" class="dc61-btn dc61-btn-ghost dc-pub-wa-btn">WhatsApp</button>')
+            .attr('data-data', dataIso)
+            .attr('data-campos', camposJson);
+        var $actions = $('<div class="dc61-row-actions">').append($edit).append($wa);
+        $row.append($('<td class="dc61-col-acoes">').append($actions));
 
         $tbody.prepend($row);
     }

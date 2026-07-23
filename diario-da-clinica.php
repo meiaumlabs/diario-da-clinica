@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Diário da Clínica
  * Description: Recebe e interpreta o relatório diário de fechamento da recepção, armazena de forma estruturada e gera relatórios consolidados com gráficos e exportação.
- * Version:     1.4.1
+ * Version:     1.5.0
  * Author:      Meia Um Labs
  * License:     GPL-2.0+
  * Text Domain: diario-da-clinica
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DC_VERSION',    '1.4.1' );
+define( 'DC_VERSION',    '1.5.0' );
 define( 'DC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DC_TABLE',      'clinica_relatorios' );
@@ -57,6 +57,10 @@ add_action( 'wp_ajax_dc_processar', [ 'DC_Admin', 'ajax_processar' ] );
 // Export handlers via admin-post.php.
 add_action( 'admin_post_dc_export_csv', [ 'DC_Export', 'handle_export_csv' ] );
 add_action( 'admin_post_dc_export_pdf', [ 'DC_Export', 'handle_export_pdf' ] );
+
+// Backup: exporta/importa CSV (para uso posterior como restauração).
+add_action( 'admin_post_dc_export_backup_csv', [ 'DC_Export', 'handle_export_backup_csv' ] );
+add_action( 'admin_post_dc_import_csv',         [ 'DC_Export', 'handle_import_csv' ] );
 
 // Public shortcode [relatorio_diario_form] (fase 4 — protegido por capability dc_manage).
 add_shortcode( 'relatorio_diario_form', 'dc_shortcode_relatorio_form' );

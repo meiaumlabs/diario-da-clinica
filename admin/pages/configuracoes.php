@@ -51,6 +51,25 @@ if (
         <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $senha_erro ); ?></p></div>
     <?php endif; ?>
 
+    <?php
+    // Feedback da importação (redirecionamento de admin-post).
+    if ( isset( $_GET['dc_imp'] ) ) :
+        $imp_ok  = '1' === sanitize_text_field( wp_unslash( $_GET['dc_imp'] ) );
+        $imp_qtd = isset( $_GET['imp'] ) ? (int) $_GET['imp'] : 0;
+        $imp_err = isset( $_GET['err'] ) ? (int) $_GET['err'] : 0;
+        $imp_msg = isset( $_GET['msg'] ) ? sanitize_text_field( wp_unslash( $_GET['msg'] ) ) : '';
+        if ( $imp_ok ) : ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php echo esc_html( sprintf( 'Importação concluída: %d registro(s) importado(s)%s.', $imp_qtd, $imp_err ? sprintf( ', %d linha(s) ignorada(s)', $imp_err ) : '' ) ); ?></p>
+            </div>
+        <?php else : ?>
+            <div class="notice notice-error is-dismissible">
+                <p><?php echo esc_html( 'Falha na importação' . ( $imp_msg ? ': ' . $imp_msg : '.' ) ); ?></p>
+            </div>
+        <?php endif;
+    endif;
+    ?>
+
     <div class="dc-card">
         <form method="POST">
             <?php wp_nonce_field( 'dc_save_config', 'dc_config_nonce' ); ?>
@@ -94,6 +113,59 @@ if (
 
             <p class="submit">
                 <button type="submit" class="button button-primary">Salvar configurações</button>
+            </p>
+        </form>
+    </div>
+
+    <div class="dc-card">
+        <h2>Backup e restauração (CSV / Excel)</h2>
+        <p class="description" style="margin-bottom:14px;">
+            Exporte todos os registros em uma planilha CSV (abre no Excel) para guardar como backup.
+            Para restaurar, importe o mesmo arquivo CSV — os registros são gravados por data,
+            sobrescrevendo dias já existentes.
+        </p>
+
+        <h3 style="margin:6px 0 8px;">Exportar backup</h3>
+        <form method="GET" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom:22px;">
+            <input type="hidden" name="action" value="dc_export_backup_csv">
+            <?php wp_nonce_field( 'dc_backup' ); ?>
+            <button type="submit" class="button button-primary">⬇ Baixar backup CSV (todos os registros)</button>
+        </form>
+
+        <hr style="margin:18px 0;">
+
+        <h3 style="margin:6px 0 8px;">Importar / restaurar</h3>
+        <form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="dc_import_csv">
+            <?php wp_nonce_field( 'dc_import' ); ?>
+
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="dc-import-file">Arquivo CSV</label></th>
+                    <td>
+                        <input type="file" name="dc_import_file" id="dc-import-file" accept=".csv,text/csv,text/plain">
+                        <p class="description">
+                            Aceita arquivos <code>.csv</code> (delimitados por <code>;</code> ou <code>,</code>).
+                            No Excel, use <em>Salvar como &rarr; CSV UTF-8</em>.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="dc-import-texto">…ou cole o CSV</label></th>
+                    <td>
+                        <textarea name="dc_import_texto" id="dc-import-texto" rows="6" class="large-text code"
+                                  placeholder="data_fechamento;ind_paciente;ind_medico;...&#10;2026-07-10;2;0;..."></textarea>
+                        <p class="description">
+                            Aceita cabeçalho com as chaves internas (<code>data_fechamento</code>, <code>total_leads</code>…)
+                            ou com os rótulos do backup (<code>Data</code>, <code>Total Leads</code>…). Datas em
+                            <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <p class="submit">
+                <button type="submit" class="button button-primary">⬆ Importar dados</button>
             </p>
         </form>
     </div>
