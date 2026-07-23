@@ -431,3 +431,52 @@
     padding: 10px 14px;
     margin-bottom: 12px;
 }
+
+/* ----------------------------------------------------------------
+   Importação via texto colado (modal de novo registro)
+   ---------------------------------------------------------------- */
+.dc-pub-import {
+    margin-bottom: 8px;
+}
+
+.dc-pub-import label {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.dc-pub-import-textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.dc-pub-import-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.dc-pub-import-hint {
+    font-size: 12px;
+    color: #666;
+}
+
+.dc-pub-sep {
+    border: 0;
+    border-top: 1px solid #e2e4e7;
+    margin: 16px 0;
+}
+
+.dc-pub-avisos {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    font-size: 13px;
+}

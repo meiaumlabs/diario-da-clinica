@@ -134,9 +134,13 @@
             pendingOverwrite = false;
             $msgArea.empty();
             $form[0].reset();
+            $('#dc-pub-import-texto').val('');
             $modal.show();
             $modal.find('input[type="date"]').val(today());
         });
+
+        // Importar via texto colado.
+        $('#dc-pub-btn-importar').on('click', importarTexto);
 
         // Fechar modal.
         $('#dc-pub-modal-close, #dc-pub-btn-cancelar').on('click', closeModal);
@@ -159,6 +163,62 @@
         $modal.hide();
         pendingOverwrite = false;
         $msgArea.empty();
+        $('#dc-pub-import-texto').val('');
+    }
+
+    function importarTexto() {
+        if (!DC_PAINEL || !DC_PAINEL.ajax_url) return;
+
+        var texto = $('#dc-pub-import-texto').val().trim();
+        if (!texto) {
+            showMsg('error', 'Cole o texto do relatório antes de processar.');
+            return;
+        }
+
+        var $btn = $('#dc-pub-btn-importar');
+        $btn.prop('disabled', true);
+        $msgArea.empty();
+
+        $.ajax({
+            url:    DC_PAINEL.ajax_url,
+            method: 'POST',
+            data: {
+                action: 'dc_painel_parse',
+                nonce:  DC_PAINEL.nonce,
+                texto:  texto,
+            },
+            success: function (resp) {
+                $btn.prop('disabled', false);
+                if (resp.success) {
+                    preencherForm(resp.data.data, resp.data.campos);
+                    var msg = 'Texto processado. Revise os campos e clique em “Salvar registro”.';
+                    if (resp.data.avisos && resp.data.avisos.length) {
+                        msg += '<ul class="dc-pub-avisos"><li>' +
+                               resp.data.avisos.map(escHtml).join('</li><li>') +
+                               '</li></ul>';
+                    }
+                    showMsg('success', msg);
+                } else {
+                    showMsg('error', resp.data ? resp.data.msg : 'Erro desconhecido.');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                showMsg('error', 'Falha na comunicação com o servidor.');
+            },
+        });
+    }
+
+    function preencherForm(data, campos) {
+        if (data) {
+            $('#dc-pub-data').val(data);
+        }
+        $.each(campos || {}, function (chave, valor) {
+            var $inp = $('#dc-pub-' + chave);
+            if ($inp.length) {
+                $inp.val(parseInt(valor, 10) || 0);
+            }
+        });
     }
 
     function today() {

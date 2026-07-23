@@ -19,6 +19,8 @@ class DC_Shortcode_Painel {
         add_action( 'wp',   [ __CLASS__, 'maybe_enqueue' ] );
         add_action( 'wp_ajax_nopriv_dc_painel_salvar', [ __CLASS__, 'ajax_salvar' ] );
         add_action( 'wp_ajax_dc_painel_salvar',        [ __CLASS__, 'ajax_salvar' ] );
+        add_action( 'wp_ajax_nopriv_dc_painel_parse',  [ __CLASS__, 'ajax_parse_texto' ] );
+        add_action( 'wp_ajax_dc_painel_parse',         [ __CLASS__, 'ajax_parse_texto' ] );
     }
 
     /**
@@ -386,6 +388,22 @@ class DC_Shortcode_Painel {
                         <button type="button" id="dc-pub-modal-close" class="dc-pub-modal-close" aria-label="Fechar">&times;</button>
                     </div>
                     <div id="dc-pub-form-msg"></div>
+
+                    <div class="dc-pub-import">
+                        <label for="dc-pub-import-texto"><strong>Importar colando o texto do fechamento</strong></label>
+                        <textarea
+                            id="dc-pub-import-texto"
+                            class="dc-pub-import-textarea"
+                            rows="8"
+                            placeholder="Fechamento do dia DD/MM/AAAA&#10;Origem LEADS&#10;👥 Indicação de paciente: 0&#10;👨‍⚕️ Indicação de médico: 0&#10;💰 Tráfego pago: 0&#10;..."></textarea>
+                        <div class="dc-pub-import-actions">
+                            <button type="button" id="dc-pub-btn-importar" class="dc-btn-secondary">Processar texto</button>
+                            <span class="dc-pub-import-hint">Os campos abaixo serão preenchidos automaticamente. Revise e clique em “Salvar registro”.</span>
+                        </div>
+                    </div>
+
+                    <hr class="dc-pub-sep">
+
                     <form id="dc-pub-form" class="dc-pub-form">
                         <div class="dc-pub-field dc-pub-field-date">
                             <label for="dc-pub-data"><strong>Data de fechamento</strong></label>
@@ -510,6 +528,38 @@ class DC_Shortcode_Painel {
         wp_send_json_success( [
             'msg' => "Registro de {$data} salvo com sucesso (ID #{$result['id']}).",
             'id'  => $result['id'],
+        ] );
+    }
+
+    // ----------------------------------------------------------------
+    // AJAX — interpreta texto colado do fechamento (mesmo parser do admin)
+    // ----------------------------------------------------------------
+
+    public static function ajax_parse_texto(): void {
+        check_ajax_referer( 'dc_painel_nonce', 'nonce' );
+
+        $token = sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ?? '' ) );
+        if ( $token === '' || false === get_transient( 'dc_painel_tok_' . $token ) ) {
+            wp_send_json_error( [ 'msg' => 'Sessão expirada. Recarregue a página e faça login novamente.' ], 403 );
+        }
+
+        $texto = sanitize_textarea_field( wp_unslash( $_POST['texto'] ?? '' ) );
+        if ( $texto === '' ) {
+            wp_send_json_error( [ 'msg' => 'Cole o texto do relatório antes de processar.' ] );
+        }
+
+        $parsed = DC_Parser::parse( $texto );
+
+        if ( empty( $parsed['data'] ) ) {
+            wp_send_json_error( [
+                'msg' => 'Data de fechamento não encontrada. Certifique-se de que o texto contém "Fechamento do dia DD/MM/AAAA".',
+            ] );
+        }
+
+        wp_send_json_success( [
+            'data'   => $parsed['data'],
+            'campos' => $parsed['campos'],
+            'avisos' => $parsed['avisos'],
         ] );
     }
 }
