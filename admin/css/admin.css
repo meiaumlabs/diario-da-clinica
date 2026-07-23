@@ -258,3 +258,106 @@
 #dc-chart-origens {
     max-height: 280px;
 }
+
+/* WhatsApp — botão e modal */
+#dc-whatsapp-wrap {
+    margin-top: 12px;
+}
+
+.dc-wa-btn {
+    cursor: pointer;
+    color: #1d4ed8;
+    text-decoration: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: inherit;
+}
+
+.dc-wa-btn:hover {
+    color: #163fb0;
+    text-decoration: underline;
+}
+
+.dc-wa-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dc-wa-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+}
+
+.dc-wa-dialog {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .3);
+    width: 92%;
+    max-width: 480px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.dc-wa-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.dc-wa-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.dc-wa-close {
+    border: 0;
+    background: none;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+}
+
+.dc-wa-close:hover {
+    color: #000;
+}
+
+.dc-wa-text {
+    width: 100%;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.dc-wa-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.dc-wa-feedback {
+    font-size: 13px;
+    color: #666;
+}
+
+.dc-wa-feedback.dc-wa-ok {
+    color: #059669;
+    font-weight: 600;
+}

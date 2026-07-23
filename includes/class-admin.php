@@ -143,6 +143,7 @@ class DC_Admin {
 
         wp_send_json_success( [
             'msg'    => "Registro de {$parsed['data']} salvo com sucesso (ID #{$result['id']}).",
+            'data'   => $parsed['data'],
             'campos' => $parsed['campos'],
             'avisos' => $parsed['avisos'],
             'id'     => $result['id'],

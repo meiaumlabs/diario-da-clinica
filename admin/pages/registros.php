@@ -61,6 +61,11 @@ $base_url   = admin_url( 'admin.php?page=dc-registros' );
                     ? round( (int) $r->consultas_total / $agend_total * 100, 1 )
                     : '—';
                 $data_br   = esc_html( date( 'd/m/Y', strtotime( $r->data_fechamento ) ) );
+                $data_iso  = date( 'Y-m-d', strtotime( $r->data_fechamento ) );
+                $campos_row = [];
+                foreach ( DC_Parser::$campos as $c ) {
+                    $campos_row[ $c ] = (int) ( $r->$c ?? 0 );
+                }
                 $url_excl  = wp_nonce_url(
                     add_query_arg( [ 'dc_action' => 'excluir', 'id' => $r->id ], $base_url ),
                     'dc_excluir_' . $r->id
@@ -75,6 +80,12 @@ $base_url   = admin_url( 'admin.php?page=dc-registros' );
                     <td><?php echo is_numeric( $conv_la ) ? esc_html( $conv_la ) . '%' : '—'; ?></td>
                     <td><?php echo is_numeric( $conv_ac ) ? esc_html( $conv_ac ) . '%' : '—'; ?></td>
                     <td class="dc-acoes">
+                        <button type="button" class="button-link dc-wa-btn"
+                                data-data="<?php echo esc_attr( $data_iso ); ?>"
+                                data-campos="<?php echo esc_attr( wp_json_encode( $campos_row ) ); ?>">
+                            WhatsApp
+                        </button>
+                        &nbsp;|&nbsp;
                         <a href="<?php echo esc_url( $url_ver ); ?>">Ver</a>
                         &nbsp;|&nbsp;
                         <a href="<?php echo esc_url( $url_excl ); ?>"

@@ -73,6 +73,12 @@ $labels = [
                 <button id="dc-btn-cancelar" type="button" class="button">Cancelar</button>
             </div>
         </div>
+
+        <div class="dc-actions" id="dc-whatsapp-wrap">
+            <button id="dc-btn-whatsapp" type="button" class="button button-primary" style="display:none;">
+                📋 Copiar para WhatsApp
+            </button>
+        </div>
     </div>
 </div>
 
