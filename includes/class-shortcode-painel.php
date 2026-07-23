@@ -33,6 +33,13 @@ class DC_Shortcode_Painel {
             is_a( $post, 'WP_Post' ) &&
             has_shortcode( $post->post_content, 'diario_clinica_painel' )
         ) {
+            // O gate de senha embute um nonce no HTML. Se a página for cacheada
+            // (plugin de cache/CDN), o nonce fica obsoleto e o login é recusado.
+            // Sinalizamos que esta página não deve ser cacheada.
+            if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+                define( 'DONOTCACHEPAGE', true );
+            }
+            nocache_headers();
             add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_assets' ] );
         }
     }
@@ -100,7 +107,10 @@ class DC_Shortcode_Painel {
             sanitize_text_field( wp_unslash( $_POST['dc_auth_nonce'] ) ),
             'dc_painel_auth'
         ) ) {
-            return;
+            // Nonce inválido/expirado — normalmente cópia cacheada da página.
+            // Damos feedback ao usuário em vez de falhar silenciosamente.
+            wp_safe_redirect( add_query_arg( 'dc_auth_erro', '2' ) );
+            exit;
         }
 
         $senha = wp_unslash( $_POST['dc_painel_senha'] );
@@ -141,7 +151,7 @@ class DC_Shortcode_Painel {
     // ----------------------------------------------------------------
 
     private static function render_gate(): string {
-        $erro  = ! empty( $_GET['dc_auth_erro'] );
+        $erro_code = isset( $_GET['dc_auth_erro'] ) ? (int) $_GET['dc_auth_erro'] : 0;
         $nonce = wp_create_nonce( 'dc_painel_auth' );
         ob_start();
         ?>
@@ -149,7 +159,9 @@ class DC_Shortcode_Painel {
             <div class="dc-painel-gate-card">
                 <h2 class="dc-painel-gate-titulo">Painel da Clínica</h2>
                 <p>Informe a senha para acessar os dados.</p>
-                <?php if ( $erro ) : ?>
+                <?php if ( 2 === $erro_code ) : ?>
+                    <p class="dc-painel-erro" role="alert">Sua sessão do formulário expirou (provável cache da página). Recarregue a página e tente novamente.</p>
+                <?php elseif ( $erro_code > 0 ) : ?>
                     <p class="dc-painel-erro" role="alert">Senha incorreta. Tente novamente.</p>
                 <?php endif; ?>
                 <form method="POST" class="dc-gate-form">
