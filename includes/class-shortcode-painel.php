@@ -191,7 +191,7 @@ class DC_Shortcode_Painel {
                     </div>
                     <button type="submit" class="dc-btn-primary">Entrar</button>
                 </form>
-                <p class="dc61-signature"><span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span> Desenvolvido por <strong>61labs</strong></p>
+                <p class="dc61-signature"><span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span> Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener"><strong>61 Labs</strong></a></p>
             </div>
         </div>
         <?php
@@ -523,7 +523,7 @@ class DC_Shortcode_Painel {
             <!-- Assinatura 61labs -->
             <footer class="dc61-footer">
                 <span class="dc61-signature-logo"><?php echo self::logo_svg(); // phpcs:ignore ?></span>
-                <span>Desenvolvido por <strong>61labs</strong></span>
+                <span>Desenvolvido por <a href="https://61labs.com.br" target="_blank" rel="noreferrer noopener"><strong>61 Labs</strong></a></span>
             </footer>
 
             <!-- Modal WhatsApp -->
