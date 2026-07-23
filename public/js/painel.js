@@ -251,10 +251,15 @@
                 $btnSubmit.prop('disabled', false);
 
                 if (resp.success) {
-                    showMsg('success', resp.data.msg);
+                    var savedData   = resp.data.data;
+                    var savedCampos = resp.data.campos || {};
                     $form[0].reset();
                     $form.find('input[type="date"]').val(today());
+                    $('#dc-pub-import-texto').val('');
                     pendingOverwrite = false;
+                    closeModal();
+                    addHistoricoRow(savedData, savedCampos);
+                    openWaModal(buildWhatsapp(savedData, savedCampos));
                 } else if (resp.data && resp.data.duplicado) {
                     showMsg('warn',
                         escHtml(resp.data.msg) +
@@ -287,12 +292,138 @@
             .replace(/"/g, '&quot;');
     }
 
+    function formatDataBR(iso) {
+        var p = String(iso).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+    }
+
+    // =========================================================
+    // WhatsApp — geração de texto, modal e histórico
+    // =========================================================
+    var DC_WA_ROWS = [
+        { emoji: '\uD83D\uDC65',                   label: 'Indicação de paciente',                    key: 'ind_paciente' },
+        { emoji: '\uD83D\uDC68\u200D\u2695\uFE0F', label: 'Indicação de médico',                      key: 'ind_medico' },
+        { emoji: '\uD83D\uDCB0',                   label: 'Tráfego pago',                             key: 'trafego_pago' },
+        { emoji: '\uD83D\uDCBB',                   label: 'Site',                                     key: 'site' },
+        { emoji: '\uD83D\uDCF1',                   label: 'Instagram orgânico',                       key: 'instagram_organico' },
+        { emoji: '\uD83C\uDFE5',                   label: 'Paciente já da clínica',                   key: 'paciente_antigo' },
+        { emoji: '\uD83D\uDCCC',                   label: 'Outros',                                   key: 'outros' },
+        { sep: true },
+        { emoji: '\uD83D\uDCC8',                   label: 'Total de Leads',                           key: 'total_leads' },
+        { emoji: '\uD83D\uDCC5',                   label: 'Agendamentos (tráfego)',                   key: 'agend_trafego' },
+        { emoji: '\uD83D\uDCC5',                   label: 'Agendamentos (site)',                      key: 'agend_site' },
+        { emoji: '\uD83D\uDCC5',                   label: 'Agendamentos (indicação)',                 key: 'agend_indicacao' },
+        { emoji: '\uD83D\uDCC5',                   label: 'Agendamentos (pacientes antigos)',         key: 'agend_antigos' },
+        { emoji: '\u2705',                         label: 'Consultas realizadas',                     key: 'consultas_total' },
+        { emoji: '\u2705',                         label: 'Consultas realizadas (tráfego)',           key: 'consultas_trafego' },
+        { emoji: '\u2705',                         label: 'Consultas realizadas (orgânico)',          key: 'consultas_organico' },
+        { emoji: '\u2705',                         label: 'Consultas realizadas (pacientes antigos)', key: 'consultas_antigos' },
+        { emoji: '\u2705',                         label: 'Consultas realizadas (indicação)',         key: 'consultas_indicacao' }
+    ];
+
+    function fmtNum(n) {
+        n = parseInt(n, 10);
+        if (isNaN(n)) n = 0;
+        return n === 0 ? '0' : String(n).padStart(2, '0');
+    }
+
+    function buildWhatsapp(dataIso, campos) {
+        campos = campos || {};
+        var lines = ['Fechamento do dia ' + formatDataBR(dataIso), 'Origem LEADS'];
+        DC_WA_ROWS.forEach(function (r) {
+            if (r.sep) { lines.push(''); return; }
+            lines.push(r.emoji + '  ' + r.label + ': ' + fmtNum(campos[r.key]));
+        });
+        return lines.join('\n');
+    }
+
+    var $waModal, $waText, $waFeedback;
+
+    function initWhatsapp() {
+        $waModal    = $('#dc-pub-wa-modal');
+        $waText     = $('#dc-pub-wa-text');
+        $waFeedback = $('#dc-pub-wa-feedback');
+
+        if (!$waModal.length) return;
+
+        $('#dc-pub-wa-close').on('click', closeWaModal);
+        $waModal.on('click', function (e) {
+            if ($(e.target).is($waModal)) closeWaModal();
+        });
+        $('#dc-pub-wa-copy').on('click', copyWaText);
+
+        // Botões de copiar no histórico (delegado — cobre linhas dinâmicas).
+        $('#dc-pub-historico-tbody').on('click', '.dc-pub-wa-btn', function () {
+            var $btn = $(this);
+            openWaModal(buildWhatsapp($btn.data('data'), $btn.data('campos')));
+        });
+    }
+
+    function openWaModal(text) {
+        if (!$waModal || !$waModal.length) return;
+        $waText.val(text);
+        $waFeedback.text('').removeClass('dc-pub-wa-ok');
+        $waModal.show();
+    }
+
+    function closeWaModal() {
+        if ($waModal) $waModal.hide();
+    }
+
+    function copyWaText() {
+        var text = $waText.val();
+
+        function done() {
+            $waFeedback.text('Copiado!').addClass('dc-pub-wa-ok');
+            setTimeout(function () { $waFeedback.text('').removeClass('dc-pub-wa-ok'); }, 2500);
+        }
+        function legacyCopy() {
+            $waText[0].focus();
+            $waText[0].select();
+            try { document.execCommand('copy'); done(); } catch (e) {}
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, legacyCopy);
+        } else {
+            legacyCopy();
+        }
+    }
+
+    function addHistoricoRow(dataIso, campos) {
+        var $tbody = $('#dc-pub-historico-tbody');
+        if (!$tbody.length) return;
+        campos = campos || {};
+
+        $tbody.find('.dc-pub-hist-vazio').remove();
+        $tbody.find('tr[data-data="' + dataIso + '"]').remove();
+
+        var agend = (parseInt(campos.agend_trafego, 10) || 0)
+                  + (parseInt(campos.agend_site, 10) || 0)
+                  + (parseInt(campos.agend_indicacao, 10) || 0)
+                  + (parseInt(campos.agend_antigos, 10) || 0);
+
+        var $row = $('<tr>').attr('data-data', dataIso);
+        $row.append($('<td>').html('<strong>' + escHtml(formatDataBR(dataIso)) + '</strong>'));
+        $row.append($('<td>').text(parseInt(campos.total_leads, 10) || 0));
+        $row.append($('<td>').text(agend));
+        $row.append($('<td>').text(parseInt(campos.consultas_total, 10) || 0));
+
+        var $btn = $('<button type="button" class="dc-btn-secondary dc-pub-wa-btn">Copiar WhatsApp</button>')
+            .attr('data-data', dataIso)
+            .attr('data-campos', JSON.stringify(campos));
+        $row.append($('<td>').append($btn));
+
+        $tbody.prepend($row);
+    }
+
     // =========================================================
     // Bootstrap
     // =========================================================
     $(function () {
         initCharts();
         initModal();
+        initWhatsapp();
     });
 
 }(jQuery));

@@ -248,6 +248,10 @@ class DC_Shortcode_Painel {
 
         $page_url = esc_url( get_permalink() ?: home_url() );
 
+        // Histórico dos últimos registros (independente do filtro de período).
+        $hist      = DC_DB::listar( 1, 30 );
+        $hist_rows = $hist['rows'];
+
         ob_start();
         ?>
         <div class="dc-painel-wrap">
@@ -378,6 +382,68 @@ class DC_Shortcode_Painel {
             <div class="dc-painel-card">
                 <h3>Registrar dados</h3>
                 <button type="button" class="dc-btn-primary" id="dc-pub-btn-novo">Novo registro</button>
+            </div>
+
+            <!-- Histórico de registros -->
+            <div class="dc-painel-card" id="dc-pub-historico-card">
+                <h3>Histórico de registros</h3>
+                <div class="dc-painel-table-wrap">
+                    <table class="dc-painel-table" id="dc-pub-historico-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Leads</th>
+                                <th>Agend.</th>
+                                <th>Consultas</th>
+                                <th>WhatsApp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dc-pub-historico-tbody">
+                        <?php if ( empty( $hist_rows ) ) : ?>
+                            <tr class="dc-pub-hist-vazio"><td colspan="5">Nenhum registro ainda.</td></tr>
+                        <?php else :
+                            foreach ( $hist_rows as $hr ) :
+                                $h_campos = [];
+                                foreach ( DC_Parser::$campos as $c ) {
+                                    $h_campos[ $c ] = (int) ( $hr->$c ?? 0 );
+                                }
+                                $h_agend = $h_campos['agend_trafego'] + $h_campos['agend_site']
+                                         + $h_campos['agend_indicacao'] + $h_campos['agend_antigos'];
+                                $h_iso   = date( 'Y-m-d', strtotime( $hr->data_fechamento ) );
+                                $h_br    = date( 'd/m/Y', strtotime( $hr->data_fechamento ) );
+                        ?>
+                            <tr data-data="<?php echo esc_attr( $h_iso ); ?>">
+                                <td><strong><?php echo esc_html( $h_br ); ?></strong></td>
+                                <td><?php echo esc_html( $h_campos['total_leads'] ); ?></td>
+                                <td><?php echo esc_html( $h_agend ); ?></td>
+                                <td><?php echo esc_html( $h_campos['consultas_total'] ); ?></td>
+                                <td>
+                                    <button type="button" class="dc-btn-secondary dc-pub-wa-btn"
+                                            data-data="<?php echo esc_attr( $h_iso ); ?>"
+                                            data-campos="<?php echo esc_attr( wp_json_encode( $h_campos ) ); ?>">
+                                        Copiar WhatsApp
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modal WhatsApp -->
+            <div id="dc-pub-wa-modal" class="dc-pub-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="dc-pub-wa-titulo">
+                <div class="dc-pub-modal-inner">
+                    <div class="dc-pub-modal-header">
+                        <h3 id="dc-pub-wa-titulo">Enviar para WhatsApp</h3>
+                        <button type="button" id="dc-pub-wa-close" class="dc-pub-modal-close" aria-label="Fechar">&times;</button>
+                    </div>
+                    <textarea id="dc-pub-wa-text" class="dc-pub-wa-text" rows="18" readonly></textarea>
+                    <div class="dc-pub-wa-actions">
+                        <button type="button" id="dc-pub-wa-copy" class="dc-btn-primary">📋 Copiar</button>
+                        <span id="dc-pub-wa-feedback" class="dc-pub-wa-feedback" aria-live="polite"></span>
+                    </div>
+                </div>
             </div>
 
             <!-- Modal de novo registro -->
@@ -526,8 +592,10 @@ class DC_Shortcode_Painel {
         }
 
         wp_send_json_success( [
-            'msg' => "Registro de {$data} salvo com sucesso (ID #{$result['id']}).",
-            'id'  => $result['id'],
+            'msg'    => "Registro de {$data} salvo com sucesso (ID #{$result['id']}).",
+            'id'     => $result['id'],
+            'data'   => $data,
+            'campos' => $campos,
         ] );
     }
 

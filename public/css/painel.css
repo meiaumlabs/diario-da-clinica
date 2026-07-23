@@ -480,3 +480,35 @@
     padding-left: 18px;
     font-size: 13px;
 }
+
+/* ----------------------------------------------------------------
+   Modal WhatsApp (painel do usuário)
+   ---------------------------------------------------------------- */
+.dc-pub-wa-text {
+    width: 100%;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.dc-pub-wa-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.dc-pub-wa-feedback {
+    font-size: 13px;
+    color: #666;
+}
+
+.dc-pub-wa-feedback.dc-pub-wa-ok {
+    color: #059669;
+    font-weight: 600;
+}
